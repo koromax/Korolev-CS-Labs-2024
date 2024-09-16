@@ -4,7 +4,7 @@ namespace {
 const int maxMinutes = 59;
 const int night = 0;
 const int morning = 5;
-const int day = 12;
+const int noon = 12;
 const int evening = 18;
 const int dayCycleLength = 24;
 
@@ -17,23 +17,22 @@ const int minutesUIRuleLBound = 2;
 const int minutesUIRuleRBound = 4;
 const int minutesUIRuleExceptionLBound = 10;
 const int minutesUIRuleExceptionRBound = 20;
+const int minDivide = 10;
 }  // namespace
 
 int main(int, char**) {
-    int input1 = 0;
-    int input2 = 0;
-    std::cin >> input1 >> input2;
+    int hours = 0;
+    int minutes = 0;
+    std::cin >> hours >> minutes;
 
-    const int hours = input1;
-    const int minutes = input2;
-    const int hours_12hFormat = (hours > 12) ? (hours - 12) : hours;
-    const int minutesSecondNumber = minutes % 10;
+    int hours_12hFormat = (hours > noon) ? (hours - noon) : hours;
+    int minutesSecondNumber = minutes % minDivide;
 
-    if (hours > dayCycleLength) {
+    if (hours < 0 or dayCycleLength <= hours) {
         std::cout << "Часов больше чем надо\n";
         return 0;
     }
-    if (minutes > maxMinutes or (hours == dayCycleLength and minutes != 0)) {
+    if (minutes < 0 or maxMinutes < minutes) {
         std::cout << "Минут больше чем надо\n";
         return 0;
     }
@@ -43,7 +42,7 @@ int main(int, char**) {
             std::cout << "полночь\n";
             return 0;
         }
-        if (hours == day) {
+        if (hours == noon) {
             std::cout << "полдень\n";
             return 0;
         }
@@ -51,35 +50,31 @@ int main(int, char**) {
 
     std::cout << hours_12hFormat << " ";
     std::cout << "час";
-    if (hours_12hFormat == hourRuleException) {
-        std::cout << " ";
-    } else if ((hoursARuleLBound <= hours_12hFormat and hours_12hFormat <= hoursARuleRBound)) {
-        std::cout << "а" << " ";
-    } else {
-        std::cout << "ов" << " ";
+    if ((hoursARuleLBound <= hours_12hFormat and hours_12hFormat <= hoursARuleRBound)) {
+        std::cout << "а";
+    } else if (hours_12hFormat != hourRuleException) {
+        std::cout << "ов";
     }
 
     if (minutes != 0) {
-        std::cout << minutes << " минут";
+        std::cout << " " << minutes << " минут";
     }
 
     if (minutesSecondNumber == 1 and minutes != minutesARuleException) {
-        std::cout << "а" << " ";
+        std::cout << "а";
     } else if ((minutesUIRuleLBound <= minutesSecondNumber and minutesSecondNumber <= minutesUIRuleRBound) and
                (minutes < minutesUIRuleExceptionLBound or minutes > minutesUIRuleExceptionRBound)) {
-        std::cout << "ы" << " ";
-    } else if (minutes != 0) {
-        std::cout << " ";
+        std::cout << "ы";
     }
 
     if (night <= hours and hours < morning) {
-        std::cout << "ночи";
-    } else if (morning <= hours and hours < day) {
-        std::cout << "утра";
-    } else if (day <= hours and hours < evening) {
-        std::cout << "дня";
+        std::cout << " ночи";
+    } else if (morning <= hours and hours < noon) {
+        std::cout << " утра";
+    } else if (noon <= hours and hours < evening) {
+        std::cout << " дня";
     } else if (evening <= hours and hours < dayCycleLength) {
-        std::cout << "вечера";
+        std::cout << " вечера";
     }
 
     if (minutes == 0) {
