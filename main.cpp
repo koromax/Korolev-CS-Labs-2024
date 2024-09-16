@@ -1,23 +1,26 @@
 #include <iostream>
 
 namespace {
-const int maxMinutes = 59;
+const int minAllowedValue = 0;
+const int maxAllowedHours = 23;
+const int maxAllowedMinutes = 59;
 const int night = 0;
 const int morning = 5;
 const int noon = 12;
 const int evening = 18;
 const int dayCycleLength = 24;
 
-const int hourRuleException = 1;
+const int hoursOVRuleException = 1;
 const int hoursARuleLBound = 2;
 const int hoursARuleRBound = 4;
 
+const int minutesARule = 1;
 const int minutesARuleException = 11;
 const int minutesUIRuleLBound = 2;
 const int minutesUIRuleRBound = 4;
 const int minutesUIRuleExceptionLBound = 10;
 const int minutesUIRuleExceptionRBound = 20;
-const int minDivide = 10;
+const int divisorToDetermineTheSecondDigit = 10;
 }  // namespace
 
 int main(int, char**) {
@@ -26,13 +29,13 @@ int main(int, char**) {
     std::cin >> hours >> minutes;
 
     int hours_12hFormat = (hours > noon) ? (hours - noon) : hours;
-    int minutesSecondNumber = minutes % minDivide;
+    int minutesSecondDigit = minutes % divisorToDetermineTheSecondDigit;
 
-    if (hours < 0 or dayCycleLength <= hours) {
+    if (hours < minAllowedValue or maxAllowedHours < hours) {
         std::cout << "Часов больше чем надо\n";
         return 0;
     }
-    if (minutes < 0 or maxMinutes < minutes) {
+    if (minutes < minAllowedValue or maxAllowedMinutes < minutes) {
         std::cout << "Минут больше чем надо\n";
         return 0;
     }
@@ -52,7 +55,7 @@ int main(int, char**) {
     std::cout << "час";
     if ((hoursARuleLBound <= hours_12hFormat and hours_12hFormat <= hoursARuleRBound)) {
         std::cout << "а";
-    } else if (hours_12hFormat != hourRuleException) {
+    } else if (hours_12hFormat != hoursOVRuleException) {
         std::cout << "ов";
     }
 
@@ -60,9 +63,9 @@ int main(int, char**) {
         std::cout << " " << minutes << " минут";
     }
 
-    if (minutesSecondNumber == 1 and minutes != minutesARuleException) {
+    if (minutesSecondDigit == minutesARule and minutes != minutesARuleException) {
         std::cout << "а";
-    } else if ((minutesUIRuleLBound <= minutesSecondNumber and minutesSecondNumber <= minutesUIRuleRBound) and
+    } else if ((minutesUIRuleLBound <= minutesSecondDigit and minutesSecondDigit <= minutesUIRuleRBound) and
                (minutes < minutesUIRuleExceptionLBound or minutes > minutesUIRuleExceptionRBound)) {
         std::cout << "ы";
     }
