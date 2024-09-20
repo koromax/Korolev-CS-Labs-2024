@@ -19,7 +19,7 @@ const int kDivisorToDetermineTheLastDigitOfANumberInBase10 = 10;
 const int kLastHourWhenNoSubtractionIsNeeded = 12;
 const int kAmountOfHoursToSubtract = 12;
 
-const int kHourIsExact = 0;
+const int kMinutesWhenHourIsExact = 0;
 const int kMidnightHour = 0;
 const int kNoonHour = 12;
 
@@ -41,16 +41,13 @@ int main(int, char**) {
     int minutes = 0;
     std::cin >> hours >> minutes;
 
-    int hours12hFormat = (hours > kLastHourWhenNoSubtractionIsNeeded) ? (hours - kAmountOfHoursToSubtract) : hours;
-    int minutesSecondDigit = minutes % kDivisorToDetermineTheLastDigitOfANumberInBase10;
-
     if ((hours < kMinAllowedValueOfHours || hours > kMaxAllowedValueOfHours) ||
         (minutes < kMinAllowedValueOfMinutes || minutes > kMaxAllowedValueOfMinutes)) {
         std::cout << "неверные данные\n";
         return 1;
     }
 
-    if (minutes == kHourIsExact) {
+    if (minutes == kMinutesWhenHourIsExact) {
         if (hours == kMidnightHour) {
             std::cout << "полночь\n";
             return 0;
@@ -61,8 +58,11 @@ int main(int, char**) {
         }
     }
 
+    int hours12hFormat = (hours > kLastHourWhenNoSubtractionIsNeeded) ? (hours - kAmountOfHoursToSubtract) : hours;
+    int minutesSecondDigit = minutes % kDivisorToDetermineTheLastDigitOfANumberInBase10;
+
     std::cout << hours12hFormat << " ";
-    if ((kHoursGenitiveCaseLowerLimit <= hours12hFormat && kHoursGenitiveCaseUpperLimit >= hours12hFormat)) {
+    if ((hours12hFormat >= kHoursGenitiveCaseLowerLimit && hours12hFormat <= kHoursGenitiveCaseUpperLimit)) {
         std::cout << "часа";
     } else if (hours12hFormat == kHoursGenitiveCaseException) {
         std::cout << "час";
@@ -70,17 +70,16 @@ int main(int, char**) {
         std::cout << "часов";
     }
 
-    if (minutes != kHourIsExact) {
+    if (minutes != kMinutesWhenHourIsExact) {
         std::cout << " " << minutes << " ";
-    }
-
-    if (minutesSecondDigit == kMinutesNominativeCaseCriteria && minutes != kMinutesNominativeCaseException) {
-        std::cout << "минута";
-    } else if ((minutesSecondDigit >= kMinutesGenitiveCaseLowerLimit && minutesSecondDigit <= kMinutesGenitiveCaseUpperLimit) &&
-               (minutes < kMinutesGenitiveCaseExceptionLowerLimit || minutes > kMinutesGenitiveCaseExceptionUpperLimit)) {
-        std::cout << "минуты";
-    } else if (minutes != kHourIsExact) {
-        std::cout << "минут";
+        if (minutesSecondDigit == kMinutesNominativeCaseCriteria && minutes != kMinutesNominativeCaseException) {
+            std::cout << "минута";
+        } else if ((minutesSecondDigit >= kMinutesGenitiveCaseLowerLimit && minutesSecondDigit <= kMinutesGenitiveCaseUpperLimit) &&
+                   (minutes < kMinutesGenitiveCaseExceptionLowerLimit || minutes > kMinutesGenitiveCaseExceptionUpperLimit)) {
+            std::cout << "минуты";
+        } else {
+            std::cout << "минут";
+        }
     }
 
     if (kHourWhenNightBegins <= hours && kHourWhenNightEnds > hours) {
@@ -93,7 +92,7 @@ int main(int, char**) {
         std::cout << " вечера";
     }
 
-    if (minutes == kHourIsExact) {
+    if (minutes == kMinutesWhenHourIsExact) {
         std::cout << " ровно";
     }
     std::cout << "\n";
