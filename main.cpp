@@ -1,98 +1,92 @@
 #include <iostream>
 
 namespace {
-const int kMinAllowedValueOfHours = 0;
-const int kMaxAllowedValueOfHours = 23;
-const int kMinAllowedValueOfMinutes = 0;
-const int kMaxAllowedValueOfMinutes = 59;
+const int kMinHours = 0;
+const int kMaxHours = 23;
+const int kMinMinutes = 0;
+const int kMaxMinutes = 59;
 
-const int kHourWhenNightBegins = 0;
-const int kHourWhenNightEnds = 5;
-const int kHourWhenMorningBegins = 5;
-const int kHourWhenMorningEnds = 12;
-const int kHourWhenDaytimeBegins = 12;
-const int kHourWhenDaytimeEnds = 18;
-const int kHourWhenEveningBegins = 18;
-const int kHourWhenEveningEnds = 24;
+const int kNightBegin = 0;
+const int kNightEnd = 5;
+const int kMorningBegin = 5;
+const int kMorningEnd = 12;
+const int kDaytimeBegin = 12;
+const int kDaytimeEnd = 18;
+const int kEveningBegin = 18;
+const int kEveningEnd = 24;
 
-const int kDivisorToDetermineTheLastDigitOfANumberInBase10 = 10;
-const int kLastHourWhenNoSubtractionIsNeeded = 12;
-const int kAmountOfHoursToSubtract = 12;
+const int kDecimalBase = 10;
+const int k12hFormatBase = 12;
 
-const int kMinutesWhenHourIsExact = 0;
-const int kMidnightHour = 0;
-const int kNoonHour = 12;
+const int kHoursNominativeSingular = 1;
+const int kHoursGenitiveSingularLowerLimit = 2;
+const int kHoursGenitiveSingularUpperLimit = 4;
 
-const int kHoursGenitiveCaseException = 1;
-const int kHoursGenitiveCaseLowerLimit = 2;
-const int kHoursGenitiveCaseUpperLimit = 4;
-
-const int kMinutesNominativeCaseCriteria = 1;
-const int kMinutesNominativeCaseException = 11;
-const int kMinutesGenitiveCaseLowerLimit = 2;
-const int kMinutesGenitiveCaseUpperLimit = 4;
-const int kMinutesGenitiveCaseExceptionLowerLimit = 10;
-const int kMinutesGenitiveCaseExceptionUpperLimit = 20;
+const int kMinutesNominativeSingular = 1;
+const int kMinutesNominativePlural = 11;
+const int kMinutesNominativePluralLowerLimit = 2;
+const int kMinutesNominativePluralUpperLimit = 4;
+const int kMinutesGenitivePluralLowerLimit = 10;
+const int kMinutesGenitivePluralUpperLimit = 20;
 }  // namespace
 
 int main(int, char**) {
-    std::cout << "Введите время в 24-часовом формате: ";
+    std::cout << "Введите число часов из интервала [0; 23] и число минут из интервала [0; 59]:";
     int hours = 0;
     int minutes = 0;
     std::cin >> hours >> minutes;
 
-    if ((hours < kMinAllowedValueOfHours || hours > kMaxAllowedValueOfHours) ||
-        (minutes < kMinAllowedValueOfMinutes || minutes > kMaxAllowedValueOfMinutes)) {
+    if ((hours < kMinHours || hours > kMaxHours) || (minutes < kMinMinutes || minutes > kMaxMinutes)) {
         std::cout << "неверные данные\n";
         return 1;
     }
 
-    if (minutes == kMinutesWhenHourIsExact) {
-        if (hours == kMidnightHour) {
+    if (minutes == kMinMinutes) {
+        if (hours == kNightBegin) {
             std::cout << "полночь\n";
             return 0;
         }
-        if (hours == kNoonHour) {
+        if (hours == kDaytimeBegin) {
             std::cout << "полдень\n";
             return 0;
         }
     }
 
-    int hours12hFormat = (hours > kLastHourWhenNoSubtractionIsNeeded) ? (hours - kAmountOfHoursToSubtract) : hours;
-    int minutesSecondDigit = minutes % kDivisorToDetermineTheLastDigitOfANumberInBase10;
+    int hours12hFormat = (hours > k12hFormatBase) ? (hours - k12hFormatBase) : hours;
+    int minutesLastDigit = minutes % kDecimalBase;
 
     std::cout << hours12hFormat << " ";
-    if ((hours12hFormat >= kHoursGenitiveCaseLowerLimit && hours12hFormat <= kHoursGenitiveCaseUpperLimit)) {
+    if ((hours12hFormat >= kHoursGenitiveSingularLowerLimit && hours12hFormat <= kHoursGenitiveSingularUpperLimit)) {
         std::cout << "часа";
-    } else if (hours12hFormat == kHoursGenitiveCaseException) {
+    } else if (hours12hFormat == kHoursNominativeSingular) {
         std::cout << "час";
     } else {
         std::cout << "часов";
     }
 
-    if (minutes != kMinutesWhenHourIsExact) {
+    if (minutes != kMinMinutes) {
         std::cout << " " << minutes << " ";
-        if (minutesSecondDigit == kMinutesNominativeCaseCriteria && minutes != kMinutesNominativeCaseException) {
+        if (minutesLastDigit == kMinutesNominativeSingular && minutes != kMinutesNominativePlural) {
             std::cout << "минута";
-        } else if ((minutesSecondDigit >= kMinutesGenitiveCaseLowerLimit && minutesSecondDigit <= kMinutesGenitiveCaseUpperLimit) &&
-                   (minutes < kMinutesGenitiveCaseExceptionLowerLimit || minutes > kMinutesGenitiveCaseExceptionUpperLimit)) {
+        } else if ((minutesLastDigit >= kMinutesNominativePluralLowerLimit && minutesLastDigit <= kMinutesNominativePluralUpperLimit) &&
+                   (minutes < kMinutesGenitivePluralLowerLimit || minutes > kMinutesGenitivePluralUpperLimit)) {
             std::cout << "минуты";
         } else {
             std::cout << "минут";
         }
     }
 
-    if (kHourWhenNightBegins <= hours && kHourWhenNightEnds > hours) {
+    if (hours >= kNightBegin && kNightEnd > hours) {
         std::cout << " ночи";
-    } else if (kHourWhenMorningBegins <= hours && kHourWhenMorningEnds > hours) {
+    } else if (hours >= kMorningBegin && kMorningEnd > hours) {
         std::cout << " утра";
-    } else if (kHourWhenDaytimeBegins <= hours && kHourWhenDaytimeEnds > hours) {
+    } else if (hours >= kDaytimeBegin && kDaytimeEnd > hours) {
         std::cout << " дня";
-    } else if (kHourWhenEveningBegins <= hours && kHourWhenEveningEnds > hours) {
+    } else if (hours >= kEveningBegin && kEveningEnd > hours) {
         std::cout << " вечера";
     }
 
-    if (minutes == kMinutesWhenHourIsExact) {
+    if (minutes == kMinMinutes) {
         std::cout << " ровно";
     }
     std::cout << "\n";
