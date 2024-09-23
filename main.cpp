@@ -76,13 +76,13 @@ int main(int, char**) {
         }
     }
 
-    if (hours >= kNightBegin && kNightEnd > hours) {
+    if (hours >= kNightBegin && hours < kNightEnd) {
         std::cout << " ночи";
-    } else if (hours >= kMorningBegin && kMorningEnd > hours) {
+    } else if (hours >= kMorningBegin && hours < kMorningEnd) {
         std::cout << " утра";
-    } else if (hours >= kDaytimeBegin && kDaytimeEnd > hours) {
+    } else if (hours >= kDaytimeBegin && hours < kDaytimeEnd) {
         std::cout << " дня";
-    } else if (hours >= kEveningBegin && kEveningEnd > hours) {
+    } else if (hours >= kEveningBegin && hours < kEveningEnd) {
         std::cout << " вечера";
     }
 
