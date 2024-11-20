@@ -13,8 +13,8 @@ enum class Algorithm : int {
     Selection
 };
 
-void BubbleSort(bool isAscending, int* a, const size_t& length, size_t& comparisonCount, size_t& swapCount);
-void SelectionSort(bool isAscending, int* a, const size_t& length, size_t& comparisonCount, size_t& swapCount);
+void BubbleSort(int* a, const size_t& length, size_t& comparisonCount, size_t& swapCount, bool isAscending);
+void SelectionSort(int* a, const size_t& length, size_t& comparisonCount, size_t& swapCount, bool isAscending);
 
 void ExecuteStaticArray();
 void ExecuteDynamicArray();

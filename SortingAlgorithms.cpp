@@ -7,7 +7,7 @@
 
 namespace {
 const int kRandomDistributionUpperLimit = 100;
-const int kPrintArrayToStdoutLengthLimit = 100;
+const int kPrintArrayToStdoutLengthLimit = 50;
 void ClearTerminal() {
     std::cout << "\x1B[2J\x1B[H";
 }
@@ -42,7 +42,7 @@ void Swap(int& x, int& y) {
     return static_cast<size_t>(length);
 }
 
-[[maybe_unused]] void PrintArrayToStdout(int* a, const size_t& arrayLength) {
+void PrintArrayToStdout(const int* a, const size_t& arrayLength) {
     if (arrayLength >= kPrintArrayToStdoutLengthLimit) {
         std::cout << "Массив слишком длинный для вывода\n";
         return;
@@ -54,8 +54,8 @@ void Swap(int& x, int& y) {
     std::cout << '\n';
 }
 
-void PrintSortingResultToStdout(SortingAlgorithms::Algorithm algorithm, int* a, const size_t& arrayLength, size_t& comparisonCount, size_t& swapCount,
-                                bool isAscending) {
+void PrintSortingResultToStdout(const SortingAlgorithms::Algorithm algorithm, const SortingAlgorithms::Array arrayType, const int* a,
+                                const size_t& arrayLength, const size_t& comparisonCount, const size_t& swapCount, const bool isAscending) {
     const char stringSortingMethod[] = "Метод сортировки: ";
     const char stringSortingMethodBubble[] = "Сортировка пузырьком";
     const char stringSortingMethodSelection[] = "Сортировка выбором";
@@ -75,20 +75,24 @@ void PrintSortingResultToStdout(SortingAlgorithms::Algorithm algorithm, int* a, 
             std::cout << stringSortingMethodSelection << '\t';
             break;
     }
-    std::cout << stringSortingOrder;
-    if (isAscending) {
-        std::cout << stringSortingOrderAscending << '\n';
-    } else {
-        std::cout << stringSortingOrderDescending << '\n';
+
+    if (arrayType == SortingAlgorithms::Array::Static) {
+        std::cout << stringSortingOrder;
+        if (isAscending) {
+            std::cout << stringSortingOrderAscending << '\n';
+        } else {
+            std::cout << stringSortingOrderDescending << '\n';
+        }
+
+        std::cout << stringSortedArray;
+        PrintArrayToStdout(a, arrayLength);
     }
 
-    std::cout << stringSortedArray;
-    PrintArrayToStdout(a, arrayLength);
     std::cout << stringComparisonCount << comparisonCount << '\t';
     std::cout << stringSwapCount << swapCount << '\n' << '\n';
 }
 
-void GenerateArray(int* a, size_t arrayLength) {
+void GenerateArray(int* a, const size_t arrayLength) {
     std::random_device r{};
     std::default_random_engine randomEngine(r());
     std::uniform_int_distribution distribution(1, kRandomDistributionUpperLimit);
@@ -107,20 +111,13 @@ void GenerateArray(int* a, size_t arrayLength) {
 }  // namespace
 
 namespace SortingAlgorithms {
-void BubbleSort(bool isAscending, int* a, const size_t& length, size_t& comparisonCount, size_t& swapCount) {
+void BubbleSort(int* a, const size_t& length, size_t& comparisonCount, size_t& swapCount, const bool isAscending) {
     bool swapOccured = true;
 
     while (swapOccured) {
         swapOccured = false;
         for (size_t i = 0; i < length - 1; ++i) {
-            if (isAscending && a[i] > a[i + 1]) {
-                Swap(a[i], a[i + 1]);
-                swapOccured = true;
-
-                ++swapCount;
-            }
-
-            if (!isAscending && a[i] < a[i + 1]) {
+            if ((isAscending && a[i] > a[i + 1]) || (!isAscending && a[i] < a[i + 1])) {
                 Swap(a[i], a[i + 1]);
                 swapOccured = true;
 
@@ -132,16 +129,12 @@ void BubbleSort(bool isAscending, int* a, const size_t& length, size_t& comparis
     }
 }
 
-void SelectionSort(bool isAscending, int* a, const size_t& length, size_t& comparisonCount, size_t& swapCount) {
+void SelectionSort(int* a, const size_t& length, size_t& comparisonCount, size_t& swapCount, const bool isAscending) {
     for (size_t i = 0; i < length - 1; ++i) {
         size_t minEl = i;
 
         for (size_t j = i; j < length; ++j) {
-            if (isAscending && a[j] < a[minEl]) {
-                minEl = j;
-            }
-
-            if (!isAscending && a[j] > a[minEl]) {
+            if ((isAscending && a[j] < a[minEl]) || (!isAscending && a[j] > a[minEl])) {
                 minEl = j;
             }
 
@@ -170,35 +163,33 @@ void ExecuteStaticArray() {
 
     size_t bubbleSortComparisonCount = 0;
     size_t bubbleSortSwapCount = 0;
-
-    BubbleSort(true, array, arrayLength, bubbleSortComparisonCount, bubbleSortSwapCount);
-    PrintSortingResultToStdout(Algorithm::Bubble, array, arrayLength, bubbleSortComparisonCount, bubbleSortSwapCount, true);
-
-    bubbleSortComparisonCount = 0;
-    bubbleSortSwapCount = 0;
-    BubbleSort(true, array, arrayLength, bubbleSortComparisonCount, bubbleSortSwapCount);
-    PrintSortingResultToStdout(Algorithm::Bubble, array, arrayLength, bubbleSortComparisonCount, bubbleSortSwapCount, true);
+    BubbleSort(array, arrayLength, bubbleSortComparisonCount, bubbleSortSwapCount, true);
+    PrintSortingResultToStdout(Algorithm::Bubble, Array::Static, array, arrayLength, bubbleSortComparisonCount, bubbleSortSwapCount, true);
 
     bubbleSortComparisonCount = 0;
     bubbleSortSwapCount = 0;
-    BubbleSort(false, array, arrayLength, bubbleSortComparisonCount, bubbleSortSwapCount);
-    PrintSortingResultToStdout(Algorithm::Bubble, array, arrayLength, bubbleSortComparisonCount, bubbleSortSwapCount, false);
+    BubbleSort(array, arrayLength, bubbleSortComparisonCount, bubbleSortSwapCount, true);
+    PrintSortingResultToStdout(Algorithm::Bubble, Array::Static, array, arrayLength, bubbleSortComparisonCount, bubbleSortSwapCount, true);
+
+    bubbleSortComparisonCount = 0;
+    bubbleSortSwapCount = 0;
+    BubbleSort(array, arrayLength, bubbleSortComparisonCount, bubbleSortSwapCount, false);
+    PrintSortingResultToStdout(Algorithm::Bubble, Array::Static, array, arrayLength, bubbleSortComparisonCount, bubbleSortSwapCount, false);
 
     size_t selectionSortComparisonCount = 0;
     size_t selectionSortSwapCount = 0;
-
-    SelectionSort(true, arrayCopy, arrayLength, selectionSortComparisonCount, selectionSortSwapCount);
-    PrintSortingResultToStdout(Algorithm::Selection, array, arrayLength, selectionSortComparisonCount, selectionSortSwapCount, true);
-
-    selectionSortComparisonCount = 0;
-    selectionSortSwapCount = 0;
-    SelectionSort(true, arrayCopy, arrayLength, selectionSortComparisonCount, selectionSortSwapCount);
-    PrintSortingResultToStdout(Algorithm::Selection, array, arrayLength, selectionSortComparisonCount, selectionSortSwapCount, true);
+    SelectionSort(arrayCopy, arrayLength, selectionSortComparisonCount, selectionSortSwapCount, true);
+    PrintSortingResultToStdout(Algorithm::Selection, Array::Static, arrayCopy, arrayLength, selectionSortComparisonCount, selectionSortSwapCount, true);
 
     selectionSortComparisonCount = 0;
     selectionSortSwapCount = 0;
-    SelectionSort(false, arrayCopy, arrayLength, selectionSortComparisonCount, selectionSortSwapCount);
-    PrintSortingResultToStdout(Algorithm::Selection, array, arrayLength, selectionSortComparisonCount, selectionSortSwapCount, false);
+    SelectionSort(arrayCopy, arrayLength, selectionSortComparisonCount, selectionSortSwapCount, true);
+    PrintSortingResultToStdout(Algorithm::Selection, Array::Static, arrayCopy, arrayLength, selectionSortComparisonCount, selectionSortSwapCount, true);
+
+    selectionSortComparisonCount = 0;
+    selectionSortSwapCount = 0;
+    SelectionSort(arrayCopy, arrayLength, selectionSortComparisonCount, selectionSortSwapCount, false);
+    PrintSortingResultToStdout(Algorithm::Selection, Array::Static, arrayCopy, arrayLength, selectionSortComparisonCount, selectionSortSwapCount, false);
 }
 
 void ExecuteDynamicArray() {
@@ -215,13 +206,13 @@ void ExecuteDynamicArray() {
 
     size_t bubbleSortComparisonCount = 0;
     size_t bubbleSortSwapCount = 0;
-    BubbleSort(true, vector, vectorLength, bubbleSortComparisonCount, bubbleSortSwapCount);
-    PrintSortingResultToStdout(Algorithm::Bubble, vector, vectorLength, bubbleSortComparisonCount, bubbleSortSwapCount, true);
+    BubbleSort(vector, vectorLength, bubbleSortComparisonCount, bubbleSortSwapCount, true);
+    PrintSortingResultToStdout(Algorithm::Bubble, Array::Dynamic , vector, vectorLength, bubbleSortComparisonCount, bubbleSortSwapCount, true);
 
     size_t selectionSortComparisonCount = 0;
     size_t selectionSortSwapCount = 0;
-    SelectionSort(true, vectorCopy, vectorLength, selectionSortComparisonCount, selectionSortSwapCount);
-    PrintSortingResultToStdout(Algorithm::Selection, vector, vectorLength, selectionSortComparisonCount, selectionSortSwapCount, true);
+    SelectionSort(vectorCopy, vectorLength, selectionSortComparisonCount, selectionSortSwapCount, true);
+    PrintSortingResultToStdout(Algorithm::Selection, Array::Dynamic, vector, vectorLength, selectionSortComparisonCount, selectionSortSwapCount, true);
 
     delete[] vector;
     delete[] vectorCopy;
