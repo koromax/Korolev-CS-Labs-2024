@@ -102,6 +102,11 @@ void GenerateArray(int* a, const size_t arrayLength) {
     }
 }
 
+void ResetCounters(size_t& comparisonCount, size_t& swapCount) {
+    comparisonCount = 0;
+    swapCount = 0;
+}
+
 [[nodiscard]] bool ContinueExecution() {
     std::cout << "Желаете продолжить выполнение программы? (y/n): ";
     char continueExecution = 'n';
@@ -161,35 +166,31 @@ void ExecuteStaticArray() {
     PrintArrayToStdout(array, arrayLength);
     std::cout << '\n';
 
-    size_t bubbleSortComparisonCount = 0;
-    size_t bubbleSortSwapCount = 0;
-    BubbleSort(array, arrayLength, bubbleSortComparisonCount, bubbleSortSwapCount, true);
-    PrintSortingResultToStdout(Algorithm::Bubble, Array::Static, array, arrayLength, bubbleSortComparisonCount, bubbleSortSwapCount, true);
+    size_t comparisonCount = 0;
+    size_t swapCount = 0;
 
-    bubbleSortComparisonCount = 0;
-    bubbleSortSwapCount = 0;
-    BubbleSort(array, arrayLength, bubbleSortComparisonCount, bubbleSortSwapCount, true);
-    PrintSortingResultToStdout(Algorithm::Bubble, Array::Static, array, arrayLength, bubbleSortComparisonCount, bubbleSortSwapCount, true);
+    BubbleSort(array, arrayLength, comparisonCount, swapCount, true);
+    PrintSortingResultToStdout(Algorithm::Bubble, Array::Static, array, arrayLength, comparisonCount, swapCount, true);
 
-    bubbleSortComparisonCount = 0;
-    bubbleSortSwapCount = 0;
-    BubbleSort(array, arrayLength, bubbleSortComparisonCount, bubbleSortSwapCount, false);
-    PrintSortingResultToStdout(Algorithm::Bubble, Array::Static, array, arrayLength, bubbleSortComparisonCount, bubbleSortSwapCount, false);
+    ResetCounters(swapCount, comparisonCount);
+    BubbleSort(array, arrayLength, comparisonCount, swapCount, true);
+    PrintSortingResultToStdout(Algorithm::Bubble, Array::Static, array, arrayLength, comparisonCount, swapCount, true);
 
-    size_t selectionSortComparisonCount = 0;
-    size_t selectionSortSwapCount = 0;
-    SelectionSort(arrayCopy, arrayLength, selectionSortComparisonCount, selectionSortSwapCount, true);
-    PrintSortingResultToStdout(Algorithm::Selection, Array::Static, arrayCopy, arrayLength, selectionSortComparisonCount, selectionSortSwapCount, true);
+    ResetCounters(swapCount, comparisonCount);
+    BubbleSort(array, arrayLength, comparisonCount, swapCount, false);
+    PrintSortingResultToStdout(Algorithm::Bubble, Array::Static, array, arrayLength, comparisonCount, swapCount, false);
 
-    selectionSortComparisonCount = 0;
-    selectionSortSwapCount = 0;
-    SelectionSort(arrayCopy, arrayLength, selectionSortComparisonCount, selectionSortSwapCount, true);
-    PrintSortingResultToStdout(Algorithm::Selection, Array::Static, arrayCopy, arrayLength, selectionSortComparisonCount, selectionSortSwapCount, true);
+    ResetCounters(swapCount, comparisonCount);
+    SelectionSort(arrayCopy, arrayLength, comparisonCount, swapCount, true);
+    PrintSortingResultToStdout(Algorithm::Selection, Array::Static, arrayCopy, arrayLength, comparisonCount, swapCount, true);
 
-    selectionSortComparisonCount = 0;
-    selectionSortSwapCount = 0;
-    SelectionSort(arrayCopy, arrayLength, selectionSortComparisonCount, selectionSortSwapCount, false);
-    PrintSortingResultToStdout(Algorithm::Selection, Array::Static, arrayCopy, arrayLength, selectionSortComparisonCount, selectionSortSwapCount, false);
+    ResetCounters(swapCount, comparisonCount);
+    SelectionSort(arrayCopy, arrayLength, comparisonCount, swapCount, true);
+    PrintSortingResultToStdout(Algorithm::Selection, Array::Static, arrayCopy, arrayLength, comparisonCount, swapCount, true);
+
+    ResetCounters(swapCount, comparisonCount);
+    SelectionSort(arrayCopy, arrayLength, comparisonCount, swapCount, false);
+    PrintSortingResultToStdout(Algorithm::Selection, Array::Static, arrayCopy, arrayLength, comparisonCount, swapCount, false);
 }
 
 void ExecuteDynamicArray() {
@@ -204,15 +205,14 @@ void ExecuteDynamicArray() {
     PrintArrayToStdout(vector, vectorLength);
     std::cout << '\n';
 
-    size_t bubbleSortComparisonCount = 0;
-    size_t bubbleSortSwapCount = 0;
-    BubbleSort(vector, vectorLength, bubbleSortComparisonCount, bubbleSortSwapCount, true);
-    PrintSortingResultToStdout(Algorithm::Bubble, Array::Dynamic , vector, vectorLength, bubbleSortComparisonCount, bubbleSortSwapCount, true);
+    size_t comparisonCount = 0;
+    size_t swapCount = 0;
+    BubbleSort(vector, vectorLength, comparisonCount, swapCount, true);
+    PrintSortingResultToStdout(Algorithm::Bubble, Array::Dynamic, vector, vectorLength, comparisonCount, swapCount, true);
 
-    size_t selectionSortComparisonCount = 0;
-    size_t selectionSortSwapCount = 0;
-    SelectionSort(vectorCopy, vectorLength, selectionSortComparisonCount, selectionSortSwapCount, true);
-    PrintSortingResultToStdout(Algorithm::Selection, Array::Dynamic, vector, vectorLength, selectionSortComparisonCount, selectionSortSwapCount, true);
+    ResetCounters(swapCount, comparisonCount);
+    SelectionSort(vectorCopy, vectorLength, comparisonCount, swapCount, true);
+    PrintSortingResultToStdout(Algorithm::Selection, Array::Dynamic, vector, vectorLength, comparisonCount, swapCount, true);
 
     delete[] vector;
     delete[] vectorCopy;
