@@ -213,3 +213,6 @@ _deps
 
 # Additional
 build*/
+IGNORE*/
+TEXT*/
+*.py
