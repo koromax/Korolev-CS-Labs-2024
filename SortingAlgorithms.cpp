@@ -117,14 +117,14 @@ void ResetCounters(size_t& comparisonCount, size_t& swapCount) {
 
 namespace SortingAlgorithms {
 void BubbleSort(int* a, const size_t& length, size_t& comparisonCount, size_t& swapCount, const bool isAscending) {
-    bool swapOccured = true;
+    bool swapOccurred = true;
 
-    while (swapOccured) {
-        swapOccured = false;
+    while (swapOccurred) {
+        swapOccurred = false;
         for (size_t i = 0; i < length - 1; ++i) {
             if ((isAscending && a[i] > a[i + 1]) || (!isAscending && a[i] < a[i + 1])) {
                 Swap(a[i], a[i + 1]);
-                swapOccured = true;
+                swapOccurred = true;
 
                 ++swapCount;
             }
@@ -227,7 +227,7 @@ void ExecuteArray(SortingAlgorithms::Array arrayType) {
             ExecuteDynamicArray();
             break;
         default:
-            std::cout << "net" << '\n';
+            std::cout << "Вы не смогли выбрать метод." << '\n';
             break;
     }
 }
@@ -241,5 +241,8 @@ void StartMainLoop() {
 
         continueExecution = ContinueExecution();
     }
+
+    std::cout << "Программа завершена. ᓚᘏᗢ" << '\n';
 }
+
 }  // namespace SortingAlgorithms
