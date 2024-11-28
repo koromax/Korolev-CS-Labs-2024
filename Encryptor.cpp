@@ -4,6 +4,7 @@
 #include <termios.h>
 #include <unistd.h>
 #include <cmath>
+#include <cstring>
 #include <fstream>
 #include <iomanip>
 #include <iostream>
@@ -46,19 +47,19 @@ int IdentifyFiles(int argc, char** argv, fileName& fileName) {
     int filesFound = 0;
 
     for (int i = 1; i < argc; ++i) {
-        if (strstr(argv[i], namedArgOriginalText)) {
+        if (std::strstr(argv[i], namedArgOriginalText)) {
             fileName.originalText = std::strchr(argv[i], '=') + 1;
 
             ++filesFound;
-        } else if (strstr(argv[i], namedArgCodeText)) {
+        } else if (std::strstr(argv[i], namedArgCodeText)) {
             fileName.codeText = std::strchr(argv[i], '=') + 1;
 
             ++filesFound;
-        } else if (strstr(argv[i], namedArgEncryptedText)) {
+        } else if (std::strstr(argv[i], namedArgEncryptedText)) {
             fileName.encryptedText = std::strchr(argv[i], '=') + 1;
 
             ++filesFound;
-        } else if (strstr(argv[i], namedArgDecryptedText)) {
+        } else if (std::strstr(argv[i], namedArgDecryptedText)) {
             fileName.decryptedText = std::strchr(argv[i], '=') + 1;
 
             ++filesFound;
@@ -284,8 +285,8 @@ void PrintStatString(const int symbolCode, const Vector::VecInt* symbolAliases, 
     std::cout << "                                               " << textSearchCode << '\n';
 }
 
-void ShowStatistics(const Vector::VecInt* symbolAliases, const int* sortedOrder, const size_t originalTextSymbolCount,
-                    const size_t codeBookWordCount, const size_t uniqueSymbolCount, const size_t* symbolCount) {
+void ShowStatistics(const Vector::VecInt* symbolAliases, const int* sortedOrder, const size_t originalTextSymbolCount, const size_t codeBookWordCount,
+                    const size_t uniqueSymbolCount, const size_t* symbolCount) {
     struct termios old_tio = {};
     tcgetattr(STDIN_FILENO, &old_tio);
     struct termios new_tio = old_tio;
@@ -304,13 +305,15 @@ void ShowStatistics(const Vector::VecInt* symbolAliases, const int* sortedOrder,
             case '3':
                 if (currentPage != 0 || symbolMode) {
                     currentPage = 0;
-                    PrintStatPage(currentPage, symbolAliases, sortedOrder, originalTextSymbolCount, codeBookWordCount, uniqueSymbolCount, symbolCount);
+                    PrintStatPage(currentPage, symbolAliases, sortedOrder, originalTextSymbolCount, codeBookWordCount, uniqueSymbolCount,
+                                  symbolCount);
                     symbolMode = false;
                 }
                 break;
             case '4':
                 if (currentPage != 0 && !symbolMode) {
-                    PrintStatPage(--currentPage, symbolAliases, sortedOrder, originalTextSymbolCount, codeBookWordCount, uniqueSymbolCount, symbolCount);
+                    PrintStatPage(--currentPage, symbolAliases, sortedOrder, originalTextSymbolCount, codeBookWordCount, uniqueSymbolCount,
+                                  symbolCount);
                 }
                 break;
             case '5':
@@ -329,13 +332,15 @@ void ShowStatistics(const Vector::VecInt* symbolAliases, const int* sortedOrder,
                 break;
             case '6':
                 if (currentPage != CountPages(uniqueSymbolCount) - 1 && !symbolMode) {
-                    PrintStatPage(++currentPage, symbolAliases, sortedOrder, originalTextSymbolCount, codeBookWordCount, uniqueSymbolCount, symbolCount);
+                    PrintStatPage(++currentPage, symbolAliases, sortedOrder, originalTextSymbolCount, codeBookWordCount, uniqueSymbolCount,
+                                  symbolCount);
                 }
                 break;
             case '7':
                 if (currentPage != CountPages(uniqueSymbolCount) - 1 && !symbolMode) {
                     currentPage = CountPages(uniqueSymbolCount) - 1;
-                    PrintStatPage(currentPage, symbolAliases, sortedOrder, originalTextSymbolCount, codeBookWordCount, uniqueSymbolCount, symbolCount);
+                    PrintStatPage(currentPage, symbolAliases, sortedOrder, originalTextSymbolCount, codeBookWordCount, uniqueSymbolCount,
+                                  symbolCount);
                 }
                 break;
             case '0':
