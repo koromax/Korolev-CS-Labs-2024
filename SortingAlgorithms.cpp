@@ -118,12 +118,12 @@ void ResetCounters(size_t& comparisonCount, size_t& swapCount) {
 namespace SortingAlgorithms {
 void BubbleSort(int* a, const size_t& length, size_t& comparisonCount, size_t& swapCount, const bool isAscending) {
     bool swapOccurred = true;
-
+    size_t i = 0;
     while (swapOccurred) {
         swapOccurred = false;
-        for (size_t i = 0; i < length - 1; ++i) {
-            if ((isAscending && a[i] > a[i + 1]) || (!isAscending && a[i] < a[i + 1])) {
-                Swap(a[i], a[i + 1]);
+        for (size_t j = 0; j < length - i - 1; ++j) {
+            if ((isAscending && a[j] > a[j + 1]) || (!isAscending && a[j] < a[j + 1])) {
+                Swap(a[j], a[j + 1]);
                 swapOccurred = true;
 
                 ++swapCount;
@@ -131,6 +131,7 @@ void BubbleSort(int* a, const size_t& length, size_t& comparisonCount, size_t& s
 
             ++comparisonCount;
         }
+        ++i;
     }
 }
 
@@ -138,7 +139,7 @@ void SelectionSort(int* a, const size_t& length, size_t& comparisonCount, size_t
     for (size_t i = 0; i < length - 1; ++i) {
         size_t minEl = i;
 
-        for (size_t j = i; j < length; ++j) {
+        for (size_t j = i + 1; j < length; ++j) {
             if ((isAscending && a[j] < a[minEl]) || (!isAscending && a[j] > a[minEl])) {
                 minEl = j;
             }
