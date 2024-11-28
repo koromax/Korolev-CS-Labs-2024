@@ -12,13 +12,14 @@ namespace {
 const int kLinesPerPage = 5;
 const int kAsciiCodesAmount = 128;
 const int kLastNonPrintingCharacterAsciiCode = 32;
+const int kBackspaceCharAsciiCode = 127;
 const int kBufferLength = 1024;
 const int kCharColumnWidth = 5;
 const int kCodeColumnWidth = 7;
 const int kOccurrenceColumnWidth = 11;
 const int kVariationsColumnWidth = 12;
-char* const kDefaultEncryptedFileName = "encrypted.txt";
-char* const kDefaultDecryptedFileName = "decrypted.txt";
+const char kDefaultEncryptedFileName[14] = "encrypted.txt";
+const char kDefaultDecryptedFileName[14] = "decrypted.txt";
 
 struct fileName {
     const char* originalText = nullptr;
@@ -161,7 +162,11 @@ void PrintSymbol(const int symbolCode) {
     const char* codeToChar[kLastNonPrintingCharacterAsciiCode] = {"NUL", "SOH", "STX", "ETX", "EOT", "ENQ", "ACK", "BEL", "BS",  "TAB", "LF",
                                                                   "VT",  "FF",  "CR",  "SO",  "SI",  "DLE", "DC1", "DC2", "DC3", "DC4", "NAK",
                                                                   "SYN", "ETB", "CAN", "EM",  "SUB", "ESC", "FS",  "GS",  "RS",  "US"};
-    if (symbolCode < kLastNonPrintingCharacterAsciiCode) {
+    const char* backspaceChar = "BS";
+    if (symbolCode == kBackspaceCharAsciiCode) {
+        std::cout << backspaceChar;
+        return;
+    } else if (symbolCode < kLastNonPrintingCharacterAsciiCode) {
         std::cout << codeToChar[symbolCode];
         return;
     }
@@ -180,7 +185,8 @@ void PrintStatPage(size_t pageNumber, const Vector::VecInt* symbolAliases, const
 
     const char textShowFirstPage[] = "(3): First page ";
     const char textShowPrevPage[] = "(4): Previous page ";
-    const char textShowSelectedPage[] = "(5): Search symbol ";
+    const char textSearchSymbol[] = "(5): Search symbol ";
+    const char textSearchCode[] = "(%): Search by code ";
     const char textShowNextPage[] = "(6): Next page ";
     const char textShowLastPage[] = "(7): Last page ";
     const char textExitStats[] = "(0): Exit ";
@@ -223,7 +229,7 @@ void PrintStatPage(size_t pageNumber, const Vector::VecInt* symbolAliases, const
         std::cout << textShowFirstPage << ' ';
         std::cout << textShowPrevPage << ' ';
     }
-    std::cout << textShowSelectedPage << ' ';
+    std::cout << textSearchSymbol << ' ';
     if (pageNumber == CountPages(uniqueSymbolCount) - 1) {
         std::cout << textShowNextPageBlank << ' ';
         std::cout << textShowLastPageBlank << ' ';
@@ -232,12 +238,17 @@ void PrintStatPage(size_t pageNumber, const Vector::VecInt* symbolAliases, const
         std::cout << textShowLastPage << ' ';
     }
     std::cout << textExitStats << '\n';
+    std::cout << "                                     " << textSearchCode << '\n';
 }
 
-void PrintStatString(const char symbol, const Vector::VecInt* symbolAliases, const size_t* symbolCount) {
-    ClearTerminal();
+void PrintStatString(const int symbolCode, const Vector::VecInt* symbolAliases, const size_t* symbolCount) {
+    if (symbolCode >= kAsciiCodesAmount || symbolCode < 0) {
+        std::cout << "The symbol you entered is outside the operational scope of the program." << '\n';
+        return;
+    }
 
     const char textShowSelectedPage[] = "(5): Search symbol ";
+    const char textSearchCode[] = "(%): Search by code ";
     const char textExitStats[] = "(0): Exit ";
 
     const char textShowFirstPageReturn[] = "(3): Return to first page ";
@@ -245,7 +256,7 @@ void PrintStatString(const char symbol, const Vector::VecInt* symbolAliases, con
     const char textShowNextPageBlank[] = "(x): ---- ---- ";
     const char textShowLastPageBlank[] = "(x): ---- ---- ";
 
-    int symbolCode = static_cast<int>(symbol);
+    ClearTerminal();
 
     std::cout << " ----------------------------------------------------------------- ";
     std::cout << '\n';
@@ -270,6 +281,7 @@ void PrintStatString(const char symbol, const Vector::VecInt* symbolAliases, con
     std::cout << textShowNextPageBlank << ' ';
     std::cout << textShowLastPageBlank << ' ';
     std::cout << textExitStats << '\n';
+    std::cout << "                                               " << textSearchCode << '\n';
 }
 
 void ShowStatistics(const Vector::VecInt* symbolAliases, const int* sortedOrder, const size_t originalTextSymbolCount,
@@ -284,45 +296,54 @@ void ShowStatistics(const Vector::VecInt* symbolAliases, const int* sortedOrder,
     size_t currentPage = 0;
     bool symbolMode = false;
     PrintStatPage(currentPage, symbolAliases, sortedOrder, originalTextSymbolCount, codeBookWordCount, uniqueSymbolCount, symbolCount);
+
     char keystroke = ' ';
     while (fread(&keystroke, 1, 1, stdin)) {
+        int code = 0;
         switch (keystroke) {
             case '3':
-                if (currentPage == 0 && !symbolMode) {
-                    break;
+                if (currentPage != 0 || symbolMode) {
+                    currentPage = 0;
+                    PrintStatPage(currentPage, symbolAliases, sortedOrder, originalTextSymbolCount, codeBookWordCount, uniqueSymbolCount, symbolCount);
+                    symbolMode = false;
                 }
-                currentPage = 0;
-                PrintStatPage(currentPage, symbolAliases, sortedOrder, originalTextSymbolCount, codeBookWordCount, uniqueSymbolCount, symbolCount);
-                symbolMode = false;
                 break;
             case '4':
-                if (currentPage == 0 || symbolMode) {
-                    break;
+                if (currentPage != 0 && !symbolMode) {
+                    PrintStatPage(--currentPage, symbolAliases, sortedOrder, originalTextSymbolCount, codeBookWordCount, uniqueSymbolCount, symbolCount);
                 }
-                PrintStatPage(--currentPage, symbolAliases, sortedOrder, originalTextSymbolCount, codeBookWordCount, uniqueSymbolCount, symbolCount);
                 break;
             case '5':
-                std::cout << "Waiting for symbol to search...";
+                std::cout << "Waiting for symbol to search... ";
                 fread(&keystroke, 1, 1, stdin);
-                PrintStatString(keystroke, symbolAliases, symbolCount);
+                PrintStatString(static_cast<int>(keystroke), symbolAliases, symbolCount);
                 symbolMode = true;
                 break;
+            case '%':
+                tcsetattr(STDIN_FILENO, TCSANOW, &old_tio);
+                std::cout << "Enter code to search: ";
+                std::cin >> code;
+                PrintStatString(code, symbolAliases, symbolCount);
+                symbolMode = true;
+                tcsetattr(STDIN_FILENO, TCSANOW, &new_tio);
+                break;
             case '6':
-                if (currentPage == CountPages(uniqueSymbolCount) - 1 || symbolMode) {
-                    break;
+                if (currentPage != CountPages(uniqueSymbolCount) - 1 && !symbolMode) {
+                    PrintStatPage(++currentPage, symbolAliases, sortedOrder, originalTextSymbolCount, codeBookWordCount, uniqueSymbolCount, symbolCount);
                 }
-                PrintStatPage(++currentPage, symbolAliases, sortedOrder, originalTextSymbolCount, codeBookWordCount, uniqueSymbolCount, symbolCount);
                 break;
             case '7':
-                if (currentPage == CountPages(uniqueSymbolCount) - 1 || symbolMode) {
-                    break;
+                if (currentPage != CountPages(uniqueSymbolCount) - 1 && !symbolMode) {
+                    currentPage = CountPages(uniqueSymbolCount) - 1;
+                    PrintStatPage(currentPage, symbolAliases, sortedOrder, originalTextSymbolCount, codeBookWordCount, uniqueSymbolCount, symbolCount);
                 }
-                currentPage = CountPages(uniqueSymbolCount) - 1;
-                PrintStatPage(currentPage, symbolAliases, sortedOrder, originalTextSymbolCount, codeBookWordCount, uniqueSymbolCount, symbolCount);
                 break;
-            default:
+            case '0':
+                std::cout << "Exited." << '\n';
                 tcsetattr(STDIN_FILENO, TCSANOW, &old_tio);
                 return;
+            default:
+                break;
         }
     }
 }
