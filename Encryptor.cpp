@@ -254,7 +254,7 @@ void PrintStatString(const int symbolCode, const Vector::VecInt* symbolAliases, 
               << perSymbolCount[symbolCode] << "|          " << std::setw(kVariationsColumnWidth) << std::left << symbolAliases[symbolCode].size
               << '|' << '\n';
     std::cout << " ----------------------------------------------------------------- " << '\n';
-    
+
     std::cout << textShowFirstPageReturn << ' ';
     std::cout << textShowPrevPageBlank << ' ';
     std::cout << textShowSelectedPage << ' ';
