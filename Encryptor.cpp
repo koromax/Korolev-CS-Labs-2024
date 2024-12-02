@@ -95,22 +95,16 @@ int IdentifyFiles(int argc, char** argv, fileName& fileName) {
         }
     }
 
-    // if (originalTextFileName == nullptr || codeTextFileName == nullptr) {
-    //     std::cout << "The program failed to identify original-text and code-text files" << '\n';
-    //     std::cout << "Both original-text file and code-text file must be passed as arguments." << '\n';
-    //     return 2;
-    // }
+    if (fileName.originalText == nullptr || fileName.codeText == nullptr) {
+        std::cout << "The program failed to identify original-text and code-text files" << '\n';
+        std::cout << "Both original-text file and code-text file must be passed as arguments." << '\n';
+        return 2;
+    }
 
     if (filesFound != argc - 1) {
         std::cout << "something funny has happened.\n";
         return 3;
     }
-
-    // std::cout << "All files identified such as:\n";
-    // std::cout << "Original text: " << fileName.originalText << '\n';
-    // std::cout << "Code text: " << fileName.codeText << '\n';
-    // std::cout << "Encrypted text: " << fileName.encryptedText << '\n';
-    // std::cout << "Decrypted text: " << fileName.decryptedText << '\n';
     return 0;
 }
 
@@ -126,14 +120,6 @@ void CountCodeSum(Vector::VecInt& codeKeys, char buffer[], size_t bufferLength, 
 
         wordCodeSum += static_cast<int>(buffer[i]);
     }
-}
-
-[[maybe_unused]] void PrintVector(const Vector::VecInt& vector) {
-    for (size_t i = 0; i < vector.size; ++i) {
-        std::cout << Vector::GetElement(vector, i) << ' ';
-    }
-
-    std::cout << std::endl;
 }
 
 void GetSortedSymbolOrder(Vector::VecInt* v, int* sortedOrder) {
@@ -176,7 +162,7 @@ void PrintSymbol(const int symbolCode) {
 }
 
 void PrintStatPage(size_t pageNumber, const Vector::VecInt* symbolAliases, const int* sortedOrder, const size_t originalTextSymbolCount,
-                   const size_t codeBookWordCount, const size_t uniqueSymbolCount, const size_t* symbolCount) {
+                   const size_t codeBookWordCount, const size_t uniqueSymbolCount, const size_t* perSymbolCount) {
     ClearTerminal();
 
     const char textTextLengthFirstPart[] = " Text length: ";
@@ -213,7 +199,7 @@ void PrintStatPage(size_t pageNumber, const Vector::VecInt* symbolAliases, const
         std::cout << "|   " << std::setw(kCharColumnWidth) << std::left;
         PrintSymbol(sortedOrder[i]);
         std::cout << "|     " << std::setw(kCodeColumnWidth) << std::left << sortedOrder[i] << "|         " << std::setw(kOccurrenceColumnWidth)
-                  << std::left << symbolCount[sortedOrder[i]] << "|          " << std::setw(kVariationsColumnWidth) << std::left
+                  << std::left << perSymbolCount[sortedOrder[i]] << "|          " << std::setw(kVariationsColumnWidth) << std::left
                   << symbolAliases[sortedOrder[i]].size << '|';
 
         if (i % kLinesPerPage == 0) {
@@ -242,7 +228,7 @@ void PrintStatPage(size_t pageNumber, const Vector::VecInt* symbolAliases, const
     std::cout << "                                     " << textSearchCode << '\n';
 }
 
-void PrintStatString(const int symbolCode, const Vector::VecInt* symbolAliases, const size_t* symbolCount) {
+void PrintStatString(const int symbolCode, const Vector::VecInt* symbolAliases, const size_t* perSymbolCount) {
     if (symbolCode >= kAsciiCodesAmount || symbolCode < 0) {
         std::cout << "The symbol you entered is outside the operational scope of the program." << '\n';
         return;
@@ -259,23 +245,16 @@ void PrintStatString(const int symbolCode, const Vector::VecInt* symbolAliases, 
 
     ClearTerminal();
 
-    std::cout << " ----------------------------------------------------------------- ";
-    std::cout << '\n';
-    std::cout << "| Symbol | ASCII code | In-text occurrence | Amount of variations |";
-    std::cout << '\n';
-
-    std::cout << "| ------ + ---------- + ------------------ + -------------------- |";
-    std::cout << '\n';
-
+    std::cout << " ----------------------------------------------------------------- " << '\n';
+    std::cout << "| Symbol | ASCII code | In-text occurrence | Amount of variations |" << '\n';
+    std::cout << "| ------ + ---------- + ------------------ + -------------------- |" << '\n';
     std::cout << "|   " << std::setw(kCharColumnWidth) << std::left;
     PrintSymbol(symbolCode);
     std::cout << "|     " << std::setw(kCodeColumnWidth) << std::left << symbolCode << "|         " << std::setw(kOccurrenceColumnWidth) << std::left
-              << symbolCount[symbolCode] << "|          " << std::setw(kVariationsColumnWidth) << std::left << symbolAliases[symbolCode].size << '|';
-
-    std::cout << '\n';
-
+              << perSymbolCount[symbolCode] << "|          " << std::setw(kVariationsColumnWidth) << std::left << symbolAliases[symbolCode].size
+              << '|' << '\n';
     std::cout << " ----------------------------------------------------------------- " << '\n';
-
+    
     std::cout << textShowFirstPageReturn << ' ';
     std::cout << textShowPrevPageBlank << ' ';
     std::cout << textShowSelectedPage << ' ';
@@ -286,7 +265,7 @@ void PrintStatString(const int symbolCode, const Vector::VecInt* symbolAliases, 
 }
 
 void ShowStatistics(const Vector::VecInt* symbolAliases, const int* sortedOrder, const size_t originalTextSymbolCount, const size_t codeBookWordCount,
-                    const size_t uniqueSymbolCount, const size_t* symbolCount) {
+                    const size_t uniqueSymbolCount, const size_t* perSymbolCount) {
     struct termios old_tio = {};
     tcgetattr(STDIN_FILENO, &old_tio);
     struct termios new_tio = old_tio;
@@ -296,7 +275,7 @@ void ShowStatistics(const Vector::VecInt* symbolAliases, const int* sortedOrder,
 
     size_t currentPage = 0;
     bool symbolMode = false;
-    PrintStatPage(currentPage, symbolAliases, sortedOrder, originalTextSymbolCount, codeBookWordCount, uniqueSymbolCount, symbolCount);
+    PrintStatPage(currentPage, symbolAliases, sortedOrder, originalTextSymbolCount, codeBookWordCount, uniqueSymbolCount, perSymbolCount);
 
     char keystroke = ' ';
     while (fread(&keystroke, 1, 1, stdin)) {
@@ -306,41 +285,41 @@ void ShowStatistics(const Vector::VecInt* symbolAliases, const int* sortedOrder,
                 if (currentPage != 0 || symbolMode) {
                     currentPage = 0;
                     PrintStatPage(currentPage, symbolAliases, sortedOrder, originalTextSymbolCount, codeBookWordCount, uniqueSymbolCount,
-                                  symbolCount);
+                                  perSymbolCount);
                     symbolMode = false;
                 }
                 break;
             case '4':
                 if (currentPage != 0 && !symbolMode) {
                     PrintStatPage(--currentPage, symbolAliases, sortedOrder, originalTextSymbolCount, codeBookWordCount, uniqueSymbolCount,
-                                  symbolCount);
+                                  perSymbolCount);
                 }
                 break;
             case '5':
                 std::cout << "Waiting for symbol to search... ";
                 fread(&keystroke, 1, 1, stdin);
-                PrintStatString(static_cast<int>(keystroke), symbolAliases, symbolCount);
+                PrintStatString(static_cast<int>(keystroke), symbolAliases, perSymbolCount);
                 symbolMode = true;
                 break;
             case '%':
                 tcsetattr(STDIN_FILENO, TCSANOW, &old_tio);
                 std::cout << "Enter code to search: ";
                 std::cin >> code;
-                PrintStatString(code, symbolAliases, symbolCount);
+                PrintStatString(code, symbolAliases, perSymbolCount);
                 symbolMode = true;
                 tcsetattr(STDIN_FILENO, TCSANOW, &new_tio);
                 break;
             case '6':
                 if (currentPage != CountPages(uniqueSymbolCount) - 1 && !symbolMode) {
                     PrintStatPage(++currentPage, symbolAliases, sortedOrder, originalTextSymbolCount, codeBookWordCount, uniqueSymbolCount,
-                                  symbolCount);
+                                  perSymbolCount);
                 }
                 break;
             case '7':
                 if (currentPage != CountPages(uniqueSymbolCount) - 1 && !symbolMode) {
                     currentPage = CountPages(uniqueSymbolCount) - 1;
                     PrintStatPage(currentPage, symbolAliases, sortedOrder, originalTextSymbolCount, codeBookWordCount, uniqueSymbolCount,
-                                  symbolCount);
+                                  perSymbolCount);
                 }
                 break;
             case '0':
@@ -404,14 +383,10 @@ void CollectStatistics(fileName fileName, Vector::VecInt* symbolAliases, size_t&
             int encryptedSymbolCode = static_cast<int>(encryptedBuffer[i]);
             int decryptedSymbolCode = static_cast<int>(decryptedBuffer[i]);
 
-            if (std::find(symbolAliases[decryptedSymbolCode].vector,
-                          symbolAliases[decryptedSymbolCode].vector + symbolAliases[decryptedSymbolCode].size,
-                          encryptedSymbolCode) == symbolAliases[decryptedSymbolCode].vector + symbolAliases[decryptedSymbolCode].size) {
-                if (symbolAliases[decryptedSymbolCode].size == 0) {
-                    ++uniqueSymbolCount;
-                }
-                Vector::PushBack(symbolAliases[decryptedSymbolCode], encryptedSymbolCode);
+            if (symbolAliases[decryptedSymbolCode].size == 0) {
+                ++uniqueSymbolCount;
             }
+            Vector::PushBack(symbolAliases[decryptedSymbolCode], encryptedSymbolCode);
         }
     }
 }
@@ -463,12 +438,12 @@ void StartMainProgram(int argc, char** argv) {
     }
 
     size_t originalTextSymbolCount = 0;
-    size_t symbolCount[kAsciiCodesAmount] = {};
+    size_t perSymbolCount[kAsciiCodesAmount] = {};
     while (!originalText.eof()) {
         originalText.read(buffer, kBufferLength);
         size_t amountOfSymbolsRead = originalText.gcount();
         for (size_t i = 0; i < amountOfSymbolsRead; ++i) {
-            ++symbolCount[static_cast<int>(buffer[i])];
+            ++perSymbolCount[static_cast<int>(buffer[i])];
             int code = Vector::GetElement(codeKeys, i % codeKeys.size);
             char newChar = Encryptor(buffer[i], code);
             const char* writeWhat = &newChar;
@@ -510,6 +485,6 @@ void StartMainProgram(int argc, char** argv) {
     int sortedOrder[kAsciiCodesAmount] = {};
     GetSortedSymbolOrder(symbolStatsRaw, sortedOrder);
 
-    ShowStatistics(symbolStatsRaw, sortedOrder, originalTextSymbolCount, codeBookWordCount, uniqueSymbolCount, symbolCount);
+    ShowStatistics(symbolStatsRaw, sortedOrder, originalTextSymbolCount, codeBookWordCount, uniqueSymbolCount, perSymbolCount);
 }
 }  // namespace Encryptor
