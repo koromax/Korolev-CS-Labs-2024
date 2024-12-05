@@ -1,11 +1,11 @@
 #pragma once
 
 namespace IntegralCalculator {
-typedef double (*F)(double);
-typedef double (*I)(double, double);
+typedef double (*F)(const double);
+typedef double (*I)(const double, const double);
 enum class Method : int {
     IntRect = 1,
-    IncTram,
+    IntTrap,
 };
 
 struct Result {
@@ -14,7 +14,7 @@ struct Result {
     int partitions;
 };
 
-Result IntRect(const F f, const double a, const double b, const double eps);
-Result IntTrap(const F f, const double a, const double b, const double eps);
+[[nodiscard]] Result IntRect(const F f, const double a, const double b, const double eps);
+[[nodiscard]] Result IntTrap(const F f, const double a, const double b, const double eps);
 void StartMainProgram(int argc, char** argv);
 }  // namespace IntegralCalculator
