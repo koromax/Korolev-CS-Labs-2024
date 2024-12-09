@@ -7,7 +7,7 @@
 namespace Matrix {
 
 template<typename VAL>
-Matrix<VAL>::Matrix() : rows(1), columns(1) {
+Matrix<VAL>::Matrix(int n, int m) : rows(n), columns(n) {
     matrix = new VAL*[rows];
     for (int i = 0; i < rows; ++i) {
         matrix[i] = new VAL[columns];
@@ -24,16 +24,6 @@ Matrix<VAL>::~Matrix() {
 }
 
 template<typename VAL>
-void Matrix<VAL>::SetSize(int n, int m) {
-    rows = n;
-    columns = m;
-    matrix = new VAL*[n];
-    for (int i = 0; i < n; ++i) {
-        matrix[i] = new VAL[m];
-    }
-}
-
-template<typename VAL>
 void Matrix<VAL>::SetElement(int i, int j, VAL value) {
     matrix[i][j] = value;
 };
@@ -41,7 +31,7 @@ void Matrix<VAL>::SetElement(int i, int j, VAL value) {
 template<typename VAL>
 VAL Matrix<VAL>::GetElement(int i, int j) {
     if (i >= rows || j >= columns) {
-        std::cout << "mimo" << '\n';
+        std::cout << "Specified coordinates are outside of matrix bounds" << '\n';
     }
     return matrix[i][j];
 }

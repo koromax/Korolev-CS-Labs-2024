@@ -7,10 +7,9 @@ struct Matrix {
     int columns{};
     VAL** matrix{};
 
-    Matrix();
+    Matrix(int n, int m);
     ~Matrix();
 
-    void SetSize(int n, int m);
     void SetElement(int i, int j, VAL value);
     VAL GetElement(int i, int j);
 };
