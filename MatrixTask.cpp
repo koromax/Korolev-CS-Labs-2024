@@ -1,5 +1,4 @@
 #include "MatrixTask.h"
-#include "Matrix.h"
 #include "MatrixPrint.h"
 
 #include <cmath>
@@ -33,10 +32,20 @@ namespace {
     return m;
 }
 
-[[nodiscard]] int ReadPrecisionFromStdin() {
+[[nodiscard]] int ScientificToNormalPrecision(double precision) {
+    if (std::ceil(precision) == std::floor(precision)) {
+        return static_cast<int>(precision);
+    }
+    std::cout << "nerd." << '\n';
+    return static_cast<int>(std::ceil(-(log10(precision))));
+}
+
+[[nodiscard]] double ReadPrecisionFromStdin() {
     std::cout << "Enter precision (3 <= p <= 8): ";
-    int precision = 0;
+    double precision = 0;
     std::cin >> precision;
+
+    precision = ScientificToNormalPrecision(precision);
 
     if (precision < 3 || precision > 8) {
         std::cout << "Entered value is outside the allowed range. Defaulted to 5.";
@@ -53,80 +62,81 @@ namespace {
     return i;
 }
 
-template<typename VAL>
 [[nodiscard]] double FormulaTop(int i, int j, int x) {
     return std::pow(x + 1, i + 1) / std::pow(Factorial(j + 1), i + 1);
 }
 
-template<typename VAL>
 [[nodiscard]] double FormulaBot(int i, int j, int x) {
     return std::pow(-(x + 1), i + 1) / std::pow(Factorial(j + 1), i + 1);
 }
 
-template<typename VAL>
-void FillMatrix(Matrix::Matrix<VAL>& m) {
-    for (int i = 0; i < m.rows; ++i) {
-        for (int j = 0; j < m.columns; ++j) {
+void FillMatrix(double** m, int rows, int columns) {
+    for (int i = 0; i < rows; ++i) {
+        for (int j = 0; j < columns; ++j) {
             if (i == j) {
                 continue;
             }
 
             if (i < j) {
-                m.SetElement(i, j, FormulaTop<VAL>(i, j, 1));
+                m[i][j] = FormulaTop(i, j, 1);
             } else {
-                m.SetElement(i, j, FormulaBot<VAL>(i, j, 1));
+                m[i][j] = FormulaBot(i, j, 1);
             }
         }
     }
 }
 
-void WeirdOutput(int B[10][10]) {
-    std::cout << B << "  " << B[0] << "  " << B[2] << std::endl;
-    std::cout << B[0][0] << "  " << **B << "  " << *B[0] << std::endl;
-    std::cout << *(*(B + 1)) << "  " << *B[1] << std::endl;
-    std::cout << *(B[0] + 1) << "  " << *(*B + 1) << std::endl;
-#pragma clang diagnostic ignored "-Warray-bounds"
+[[maybe_unused]] void WeirdOutput(int B[10][10]) {
+    bool i;
+    std::cout << B << std::endl;
+    std::cin >> i;
+    std::cout << "  " << B[2] << "  " << B[0] << std::endl;
+    #pragma clang diagnostic ignored "-Warray-bounds"
+    std::cout << B[0][20] << "  " << *(*B + 22) << "  " << *B[5] << std::endl;
+    std::cout << *(*(B + 4)) << "  " << *(B[9] + 7) << std::endl;
+    std::cout << *(B + 5) << "  " << *(*&B + 1) << std::endl;
+    #pragma clang diagnostic ignored "-Warray-bounds"
     std::cout << B[0][20] << "  " << *(B[0] + 20) << "  " << *B[2] << std::endl;
 }
 }  // namespace
 
 namespace MatrixTask {
 void StartMainProgram(int argc, char** argv) {
-    int n = 10;
-    int m = 10;
+    int rows = 10;
+    int columns = 10;
+    #pragma clang diagnostic ignored "-Wunused-but-set-variable"
     int precision = 5;
     switch (argc) {
         case 4:
-            n = std::atoi(argv[1]);
-            m = std::atoi(argv[2]);
-            precision = std::atoi(argv[3]);
+            rows = std::atoi(argv[1]);
+            columns = std::atoi(argv[2]);
+            precision = ScientificToNormalPrecision(std::atof(argv[3]));
             break;
         case 3:
-            n = std::atoi(argv[1]);
-            m = std::atoi(argv[2]);
+            rows = std::atoi(argv[1]);
+            columns = std::atoi(argv[2]);
             precision = ReadPrecisionFromStdin();
             break;
         default:
-            n = ReadNFromStdin();
-            m = ReadMFromStdin();
+            rows = ReadNFromStdin();
+            columns = ReadMFromStdin();
             precision = ReadPrecisionFromStdin();
             break;
     }
 
-    using VAL = double;
-    Matrix::Matrix<VAL> matrix;
-    matrix.SetSize(n, m);
-
-    int dem = 0;
-    n <= m ? dem = n : dem = m;
-    for (int i = 0; i < dem; ++i) {
-        matrix.SetElement(i, i, 1.);
+    double **matrix = new double*[rows];
+    for (int i = 0; i < rows; ++i) {
+        matrix[i] = new double[columns];
     }
-    FillMatrix(matrix);
 
-    MatrixPrint::PrintMatrix(matrix, precision);
+    int min = 0;
+    rows <= columns ? min = rows : min = columns;
+    for (int i = 0; i < min; ++i) {
+        matrix[i][i] = 1.;
+    }
+    FillMatrix(matrix, rows, columns);
 
-    matrix.~Matrix();
+    MatrixPrint::PrintMatrix(matrix, precision, rows, columns);
 
     int B[10][10] = {};
     for (int i = 0; i < 10; ++i) {
@@ -135,6 +145,13 @@ void StartMainProgram(int argc, char** argv) {
         }
     }
 
-    WeirdOutput(B);
+    int* Bp[10] = {};
+    for (int i = 0; i < 10; ++i) {
+        Bp[i] = B[i];
+    }
+
+    // WeirdOutput(B);
+
+    MatrixPrint::PrintMatrix(Bp, precision, 10, 10);
 }
 }  // namespace MatrixTask
