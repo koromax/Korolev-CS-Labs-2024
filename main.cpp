@@ -42,9 +42,9 @@ int EEA(int a, int b, int& x, int& y) {
     }
 
     if (p % 2 != 0) {
-        return (a * ExpPower(a, p - 1, mod)) % mod;
+        return (a * ExpPower((a * a) % mod, (p - 1) >> 1, mod)) % mod;
     } else {
-        return ExpPower((a * a) % mod, p >> 1, mod);
+        return ExpPower((a * a) % mod, p >> 1, mod) % mod;
     }
 }
 
@@ -52,6 +52,13 @@ int main() {
     int e = 53;
     int N = 299;
     int enc = 171;
+
+    std::cout << "Enter N: ";
+    std::cin >> N;
+    std::cout << "Enter e: ";
+    std::cin >> e;
+    std::cout << "Enter enc: ";
+    std::cin >> enc;
 
     int p = 0;
     int q = 0;
