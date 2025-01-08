@@ -17,9 +17,9 @@ struct Word {
 
 struct Dictionary {
     size_t length = 0;
-    size_t capacity = 0;
-    size_t* wordOrder = nullptr;
-    Word* dict = nullptr;
+    size_t capacity = 8;
+    size_t* wordOrder = new size_t[8];
+    Word* dict = new Word[8];
 };
 
 void test();

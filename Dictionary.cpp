@@ -1,22 +1,90 @@
 #include "Dictionary.h"
 
+#include <termios.h>
+#include <unistd.h>
 #include <cstring>
 #include <fstream>
 #include <iostream>
 
+/*
+
+        COMMIT COMMENTS:
+        - rewrote to work in non-canonical mode
+        - ititialising dict with .capacity=8 instead of =0 ()
+        - everything else i forgot
+
+
+        TO-DO LIST:
+        - add loading from file
+        - complete the required tasks
+        - praise the satan
+        - add a lockout for being silly
+        - remove CompareWords()?
+        - do a in-terminal windows and pop-ups???
+        - debloat
+
+
+*/
+
 namespace {
-enum class Action : int {
-    AddWord = 1,
-    RemoveWord,
-    TranslateEngToRus,
-    TranslateRusToEng,
-    PrintDict,
-    DictToFile,
-    Exit
+enum class Action : char {
+    AddWord = '1',
+    RemoveWord = '2',
+    TranslateEngToRus = '3',
+    TranslateRusToEng = '4',
+    PrintDict = '5',
+    DictToFile = '6',
+    Exit = '7'
 };
+
+void ClearStdin() {
+    while (std::getchar() != '\n')
+        ;
+}
+
+void ConsoleController(bool isCanon, bool isEchoOn) {
+    struct termios currentState = {};
+    tcgetattr(STDIN_FILENO, &currentState);
+    struct termios newState = currentState;
+    if (isCanon) {
+        newState.c_lflag |= (ICANON);
+    } else {
+        newState.c_lflag &= (~ICANON);
+    }
+    if (isEchoOn) {
+        newState.c_lflag |= (ECHO);
+    } else {
+        newState.c_lflag &= (~ECHO);
+    }
+    tcsetattr(STDIN_FILENO, TCSANOW, &newState);
+}
+
+/*
+
+    Non-canonical essentials
+
+    struct termios old_tio = {};
+    tcgetattr(STDIN_FILENO, &old_tio);
+    struct termios new_tio = old_tio;
+    new_tio.c_lflag &= (~ICANON);
+    new_tio.c_lflag &= ~ECHO;
+    tcsetattr(STDIN_FILENO, TCSANOW, &new_tio);
+
+    char keystroke = ' ';
+    while (fread(&keystroke, 1, 1, stdin))
+
+    tcsetattr(STDIN_FILENO, TCSANOW, &old_tio);
+
+*/
 
 void ClearTerminal() {
     std::cout << "\x1B[2J\x1B[H";
+}
+
+void itoa(int n, int numberLength, char*& a) {
+    for (int i = numberLength - 1; i >= 0; --i) {
+        a[i] = static_cast<char>(static_cast<int>(n / std::pow(10, i)) % 10 + 48);
+    }
 }
 
 void AllocSpace(Dictionary::Dictionary& dict) {
@@ -40,6 +108,7 @@ void AllocSpace(Dictionary::Dictionary& dict) {
 }
 
 [[maybe_unused]] void PrintMenu() {
+    ClearTerminal();
     std::cout << "Dictionary" << '\n';
     std::cout << "Choose an action" << '\n' << '\n';
     std::cout << "1. Add word to Dictionary" << '\n';
@@ -52,9 +121,23 @@ void AllocSpace(Dictionary::Dictionary& dict) {
 }
 
 [[maybe_unused]] Action ReadSelectionFromStdin() {
-    int sel = 0;
-    std::cin >> sel;
-    return static_cast<Action>(sel);
+    char keystroke = ' ';
+    fread(&keystroke, 1, 1, stdin);
+    size_t strikes = 0;
+    while (keystroke < 49 || keystroke > 55) {
+        ++strikes;
+        if (strikes == 1) {
+            std::cout << "Press a button with a number in range 1 - 7\n";
+        } else if (strikes == 4) {
+            std::cout << "Okay, you are being silly now. I also can do silly stuff. Try pressing another button\n";
+        } else if (strikes == 5) {
+            // write a locked out trigger into file
+            ClearTerminal();
+            return Action::Exit;
+        }
+        fread(&keystroke, 1, 1, stdin);
+    }
+    return static_cast<Action>(keystroke);
 }
 
 int CompareWords(const char* wordA, const char* wordB) {
@@ -62,6 +145,7 @@ int CompareWords(const char* wordA, const char* wordB) {
 }
 
 char* ReadWordFromStdin() {
+    ConsoleController(true, true);
     char buffer[256];
     std::cout << "Enter word: ";
     std::cin >> buffer;
@@ -69,6 +153,8 @@ char* ReadWordFromStdin() {
     char* word = new char[std::strlen(buffer) + 1];
     std::strcpy(word, buffer);
 
+    ClearStdin();
+    ConsoleController(false, false);
     return word;
 }
 }  // namespace
@@ -124,7 +210,7 @@ void RemoveWord(Dictionary& dict, const Word& word) {
     }
 }
 
-const char* GetTranslation(Dictionary& dict, const char* text, bool& ENGtoRU) {
+const char* GetTranslation(Dictionary& dict, const char* text, const bool& ENGtoRU) {
     size_t L = 0;
     size_t R = dict.length;
 
@@ -158,8 +244,10 @@ const char* GetTranslation(Dictionary& dict, const char* text, bool& ENGtoRU) {
 }
 
 void PrintDict(Dictionary& dict) {
+    std::cout << "eng -- rus : " << dict.length << " entries\n";
     for (size_t i = 0; i < dict.length; ++i) {
-        std::cout << dict.dict[i].rus << ' ' << dict.dict[i].eng << '\n';
+        std::cout << dict.dict[dict.wordOrder[i]].eng << ' ' << dict.dict[dict.wordOrder[i]].rus << '\n';
+        // std::cout << dict.dict[i].rus << ' ' << dict.dict[i].eng << '\n';
     }
 }
 
@@ -171,29 +259,32 @@ void WriteDictToFile(Dictionary& dict, const char* fileName = "dict.txt") {
         return;
     }
 
-    size_t numberLength = static_cast<size_t>(std::ceil(std::log10(dict.length)));
-    char writableLength[numberLength];
-    std::sprintf(writableLength, "%d", dict.length);
+    int numberLength = static_cast<int>(std::ceil(std::log10(dict.length)));
+    char* writableLength = new char[numberLength];
+    itoa(dict.length, numberLength, writableLength);
+    std::cout << writableLength << '\n';
     dictOut.write(writableLength, numberLength);
+    dictOut.write("\n", 1);
     for (size_t i = 0; i < dict.length; ++i) {
-        dictOut.write(dict.dict[i].eng, std::strlen(dict.dict[i].eng));
-        dictOut.write(" --- ", 5);
-        dictOut.write(dict.dict[i].rus, std::strlen(dict.dict[i].rus));
+        dictOut.write(dict.dict[dict.wordOrder[i]].eng, std::strlen(dict.dict[dict.wordOrder[i]].eng));
+        dictOut.write("\n", 1);
+        dictOut.write(dict.dict[dict.wordOrder[i]].rus, std::strlen(dict.dict[dict.wordOrder[i]].rus));
         dictOut.write("\n", 1);
     }
     dictOut.close();
 }
 
-void LoadDictFromFile(Dictionary& dict, const char* fileName = "dict.txt") {
-    std::fstream dictIn;
-    dictIn.open(fileName, std::ios::in);
-    if (!dictIn.is_open()) {
-        std::cout << "Failed to open file " << fileName << "\n";
-        return;
-    }
-    int length = 0;
-    dictIn.
-}
+// doesn't work. don't commit
+// void LoadDictFromFile(Dictionary& dict, const char* fileName = "dict.txt") {
+//     std::fstream dictIn;
+//     dictIn.open(fileName, std::ios::in);
+//     if (!dictIn.is_open()) {
+//         std::cout << "Failed to open file " << fileName << "\n";
+//         return;
+//     }
+//     int length = 0;
+//     dictIn.
+// }
 
 void test() {
     Dictionary dict;
@@ -219,6 +310,11 @@ void test() {
 }
 
 void Interactive() {
+    // switching terminal to non-canonical
+    struct termios old_tio = {};
+    tcgetattr(STDIN_FILENO, &old_tio);
+    ConsoleController(false, false);
+
     Dictionary dict;
     Word word;
 
@@ -232,11 +328,16 @@ void Interactive() {
                 AddWord(dict, word);
                 break;
             case Action::RemoveWord:
-
                 break;
             case Action::TranslateEngToRus:
+                word = {.rus = "", .eng = ""};
+                word.eng = ReadWordFromStdin();
+                std::cout << GetTranslation(dict, word.eng, true);
                 break;
             case Action::TranslateRusToEng:
+                word = {.rus = "", .eng = ""};
+                word.rus = ReadWordFromStdin();
+                std::cout << GetTranslation(dict, word.eng, false);
                 break;
             case Action::PrintDict:
                 PrintDict(dict);
@@ -246,9 +347,12 @@ void Interactive() {
                 break;
             case Action::Exit:
                 std::cout << "Exiting.\n";
+                tcsetattr(STDIN_FILENO, TCSANOW, &old_tio);  // restore terminal settings
                 return;
         }
     }
+
+    tcsetattr(STDIN_FILENO, TCSANOW, &old_tio);  // restore terminal settings
 }
 
 }  // namespace Dictionary
