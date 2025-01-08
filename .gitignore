@@ -212,6 +212,10 @@ _deps
 # End of https://www.toptal.com/developers/gitignore/api/c++,visualstudiocode,clion+all,cmake,jetbrains+all
 
 # Additional
+.DS_Store
 build*/
 IGNORE*/
 *.py
+*.txt
+main
+Dictionary
