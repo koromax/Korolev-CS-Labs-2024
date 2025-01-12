@@ -2,27 +2,27 @@
 
 #include <termios.h>
 #include <unistd.h>
+#include <chrono>
 #include <cstring>
+#include <ctime>
 #include <fstream>
+#include <iomanip>
 #include <iostream>
 
 /*
 
         COMMIT COMMENTS:
-        - rewrote to work in non-canonical mode
-        - ititialising dict with .capacity=8 instead of =0 ()
-        - everything else i forgot
+        - removed redundant stuff
+        - removed CompareWords()
+        - added loading from file
+        - added a lockout for being silly
 
 
         TO-DO LIST:
-        - add loading from file
-        - complete the required tasks
+        - complete the required tasks (get removing word and getting translation working)
         - praise the satan
-        - add a lockout for being silly
-        - remove CompareWords()?
         - do a in-terminal windows and pop-ups???
-        - debloat
-
+        - debloat (nah)
 
 */
 
@@ -34,8 +34,13 @@ enum class Action : char {
     TranslateRusToEng = '4',
     PrintDict = '5',
     DictToFile = '6',
-    Exit = '7'
+    Exit = '7',
+    None
 };
+
+void ClearTerminal() {
+    std::cout << "\x1B[2J\x1B[H";
+}
 
 void ClearStdin() {
     while (std::getchar() != '\n')
@@ -57,28 +62,6 @@ void ConsoleController(bool isCanon, bool isEchoOn) {
         newState.c_lflag &= (~ECHO);
     }
     tcsetattr(STDIN_FILENO, TCSANOW, &newState);
-}
-
-/*
-
-    Non-canonical essentials
-
-    struct termios old_tio = {};
-    tcgetattr(STDIN_FILENO, &old_tio);
-    struct termios new_tio = old_tio;
-    new_tio.c_lflag &= (~ICANON);
-    new_tio.c_lflag &= ~ECHO;
-    tcsetattr(STDIN_FILENO, TCSANOW, &new_tio);
-
-    char keystroke = ' ';
-    while (fread(&keystroke, 1, 1, stdin))
-
-    tcsetattr(STDIN_FILENO, TCSANOW, &old_tio);
-
-*/
-
-void ClearTerminal() {
-    std::cout << "\x1B[2J\x1B[H";
 }
 
 void itoa(int n, int numberLength, char*& a) {
@@ -107,20 +90,71 @@ void AllocSpace(Dictionary::Dictionary& dict) {
     delete[] oldWordOrder;
 }
 
-[[maybe_unused]] void PrintMenu() {
+void PrintMenu() {
     ClearTerminal();
-    std::cout << "Dictionary" << '\n';
-    std::cout << "Choose an action" << '\n' << '\n';
-    std::cout << "1. Add word to Dictionary" << '\n';
-    std::cout << "2. Remove word from the Dictionary" << '\n';
-    std::cout << "3. Translate word from English to Russian" << '\n';
-    std::cout << "4. Translate word from Russian to English" << '\n';
-    std::cout << "5. Print Dictionary" << '\n';
-    std::cout << "6. Save Dictionary to file" << '\n';
-    std::cout << "7. Exit" << '\n';
+    std::cout << std::left;
+    std::cout << std::setw(80) << "Dictionary" << '\n';
+    std::cout << std::setw(80) << "Choose an action" << '\n' << '\n';
+    std::cout << std::setw(80) << "1. Add word to Dictionary" << '\n';
+    std::cout << std::setw(80) << "2. Remove word from the Dictionary" << '\n';
+    std::cout << std::setw(80) << "3. Translate word from English to Russian" << '\n';
+    std::cout << std::setw(80) << "4. Translate word from Russian to English" << '\n';
+    std::cout << std::setw(80) << "5. Print Dictionary" << '\n';
+    std::cout << std::setw(80) << "6. Save Dictionary to file" << '\n';
+    std::cout << std::setw(80) << "7. Exit" << '\n';
 }
 
-[[maybe_unused]] Action ReadSelectionFromStdin() {
+void ShowPopUp(const Action& action) {
+    if (action != Action::DictToFile) {
+        std::cout << "Bruh\n";
+        return;
+    }
+    char keystroke = ' ';
+
+    std::cout << "\033[s";  // saving cursor position
+    std::cout << "\033[7A";
+    std::cout << "\033[20C";
+    std::cout << "╔══════════════════════════════════════╗";
+    std::cout << "\033[1B";
+    std::cout << "\033[40D";
+    std::cout << "║                                      ║";
+    std::cout << "\033[1B";
+    std::cout << "\033[40D";
+    std::cout << "║     Saved dictionary to a file.      ║";
+    std::cout << "\033[1B";
+    std::cout << "\033[40D";
+    std::cout << "║                                      ║";
+    std::cout << "\033[1B";
+    std::cout << "\033[40D";
+    std::cout << "║          (Press any button)          ║";
+    std::cout << "\033[1B";
+    std::cout << "\033[40D";
+    std::cout << "╚══════════════════════════════════════╝";
+    std::cout << "\033[u";  // restoring cursor position
+    fread(&keystroke, 1, 1, stdin);
+}
+
+// void ShowPopUp(Action& action, Dictionary::Word& word) {
+//     switch (action) {
+//         case Action::AddWord:
+//             std::cout << "Adding word to dictionary\n";
+//             break;
+//         case Action::RemoveWord:
+//             std::cout << "Removing word from dictionary\n";
+//             break;
+//         case Action::TranslateEngToRus:
+//             std::cout << "Translating " << word.eng << " to Russian\n";
+//             break;
+//         case Action::TranslateRusToEng:
+//             std::cout << "Translating " << word.rus << " to English\n";
+//             break;
+//         default:
+//             std::cout << "Defaulted in ShowPopUp. Investigate\n";
+//             break;
+//     }
+// }
+
+[[nodiscard]] Action ReadSelectionFromStdin() {
     char keystroke = ' ';
     fread(&keystroke, 1, 1, stdin);
     size_t strikes = 0;
@@ -131,20 +165,14 @@ void AllocSpace(Dictionary::Dictionary& dict) {
         } else if (strikes == 4) {
             std::cout << "Okay, you are being silly now. I also can do silly stuff. Try pressing another button\n";
         } else if (strikes == 5) {
-            // write a locked out trigger into file
-            ClearTerminal();
-            return Action::Exit;
+            return Action::None;
         }
         fread(&keystroke, 1, 1, stdin);
     }
     return static_cast<Action>(keystroke);
 }
 
-int CompareWords(const char* wordA, const char* wordB) {
-    return std::strcmp(wordA, wordB);
-}
-
-char* ReadWordFromStdin() {
+[[nodiscard]] char* ReadWordFromStdin() {
     ConsoleController(true, true);
     char buffer[256];
     std::cout << "Enter word: ";
@@ -157,6 +185,61 @@ char* ReadWordFromStdin() {
     ConsoleController(false, false);
     return word;
 }
+
+void WriteLockoutIntoFile(const char* fileName = "dict.txt") {
+    std::fstream dictOut(fileName, std::ios::trunc | std::ios::out | std::ios::binary);
+    if (!dictOut.is_open()) {
+        std::cout << "Failed to open file " << fileName << "\n";
+        return;
+    }
+    dictOut.write("-1\n", 3);
+    auto currentTime = std::chrono::system_clock::to_time_t(std::chrono::system_clock::now());
+    dictOut.write(reinterpret_cast<const char*>(&currentTime), sizeof(currentTime));
+    dictOut.close();
+
+    std::cout << "Program was preemptively closed at " << std::ctime(&currentTime) << '\n';
+}
+
+int LoadDictFromFile(Dictionary::Dictionary& dict, const char* fileName = "dict.txt") {
+    std::ifstream dictIn(fileName);
+    if (!dictIn.is_open()) {
+        std::cout << "Failed to open file " << fileName << "\n";
+        return 1;
+    }
+
+    char buffer[256];
+    if (dictIn.getline(buffer, sizeof(buffer))) {
+        int length = std::atoi(buffer);
+
+        // check if lockout is in place
+        if (length == -1) {
+            auto currentTime = std::chrono::system_clock::to_time_t(std::chrono::system_clock::now());
+            std::time_t recordedTime;
+            dictIn.read(reinterpret_cast<char*>(&recordedTime), sizeof(recordedTime));
+
+            if (currentTime - recordedTime < 60) {
+                return 2;
+            }
+        }
+
+        for (int i = 0; i < length; ++i) {
+            Dictionary::Word word;
+            if (dictIn.getline(buffer, sizeof(buffer))) {
+                word.eng = new char[std::strlen(buffer) + 1];
+                std::strcpy(word.eng, buffer);
+            }
+            if (dictIn.getline(buffer, sizeof(buffer))) {
+                word.rus = new char[std::strlen(buffer) + 1];
+                std::strcpy(word.rus, buffer);
+            }
+            AddWord(dict, word);
+        }
+    }
+
+    dictIn.close();
+    return 0;
+}
+
 }  // namespace
 
 namespace Dictionary {
@@ -168,7 +251,7 @@ void AddWord(Dictionary& dict, const Word& word) {
     dict.dict[dict.length] = word;
 
     size_t i = 0;
-    while (i < dict.length && CompareWords(word.eng, dict.dict[dict.wordOrder[i]].eng) > 0) {
+    while (i < dict.length && std::strcmp(word.eng, dict.dict[dict.wordOrder[i]].eng) > 0) {
         ++i;
     }
 
@@ -182,7 +265,7 @@ void AddWord(Dictionary& dict, const Word& word) {
 
 void RemoveWord(Dictionary& dict, const Word& word) {
     size_t i = 0;
-    while (i < dict.length && CompareWords(word.eng, dict.dict[i].eng) != 0) {
+    while (i < dict.length && std::strcmp(word.eng, dict.dict[i].eng) != 0) {
         ++i;
     }
 
@@ -194,14 +277,13 @@ void RemoveWord(Dictionary& dict, const Word& word) {
     delete[] dict.dict[i].eng;
     delete[] dict.dict[i].rus;
 
-    for (size_t j = i; j < dict.length - 1; ++j) {
+    --dict.length;
+    for (size_t j = i; j < dict.length; ++j) {
         dict.dict[j] = dict.dict[j + 1];
     }
 
-    --dict.length;
-
     size_t k = 0;
-    while (k < dict.length && CompareWords(word.eng, dict.dict[dict.wordOrder[k]].eng) != 0) {
+    while (k < dict.length && std::strcmp(word.eng, dict.dict[dict.wordOrder[k]].eng) != 0) {
         ++k;
     }
 
@@ -217,7 +299,7 @@ const char* GetTranslation(Dictionary& dict, const char* text, const bool& ENGto
     if (ENGtoRU) {
         size_t m = L + (R - L) / 2;
         while (R - L > 1) {
-            if (CompareWords(text, dict.dict[m].eng) >= 0) {
+            if (std::strcmp(text, dict.dict[m].eng) >= 0) {
                 L = m;
             } else {
                 R = m;
@@ -225,7 +307,7 @@ const char* GetTranslation(Dictionary& dict, const char* text, const bool& ENGto
             m = L + (R - L) / 2;
         }
 
-        if (CompareWords(text, dict.dict[L].eng) != 0) {
+        if (std::strcmp(text, dict.dict[L].eng) != 0) {
             std::cout << "no such word to be found: " << text << '\n';
             return "";
         }
@@ -234,7 +316,7 @@ const char* GetTranslation(Dictionary& dict, const char* text, const bool& ENGto
 
     } else {
         for (size_t i = 0; i < dict.length; ++i) {
-            if (CompareWords(text, dict.dict[i].rus) == 0) {
+            if (std::strcmp(text, dict.dict[i].rus) == 0) {
                 return dict.dict[i].eng;
             }
         }
@@ -252,6 +334,11 @@ void PrintDict(Dictionary& dict) {
 }
 
 void WriteDictToFile(Dictionary& dict, const char* fileName = "dict.txt") {
+    if (dict.length == 0) {
+        std::cout << "Dictionary is empty! Aborted writing to file\n";
+        return;
+    }
+
     std::fstream dictOut;
     dictOut.open(fileName, std::ios::trunc | std::ios::out);
     if (!dictOut.is_open()) {
@@ -272,24 +359,14 @@ void WriteDictToFile(Dictionary& dict, const char* fileName = "dict.txt") {
         dictOut.write("\n", 1);
     }
     dictOut.close();
-}
 
-// doesn't work. don't commit
-// void LoadDictFromFile(Dictionary& dict, const char* fileName = "dict.txt") {
-//     std::fstream dictIn;
-//     dictIn.open(fileName, std::ios::in);
-//     if (!dictIn.is_open()) {
-//         std::cout << "Failed to open file " << fileName << "\n";
-//         return;
-//     }
-//     int length = 0;
-//     dictIn.
-// }
+    ShowPopUp(Action::DictToFile);
+}
 
 void test() {
     Dictionary dict;
 
-    Word word1 = {.rus = "", .eng = ""};
+    Word word1;
     word1.eng = ReadWordFromStdin();
     word1.rus = ReadWordFromStdin();
     AddWord(dict, word1);
@@ -310,19 +387,30 @@ void test() {
 }
 
 void Interactive() {
+    Dictionary dict;
+    Word word;
+
+    switch (LoadDictFromFile(dict)) {
+        case 1:
+            std::cout << "Failed to load dictionary from file\n";
+            break;
+        case 2:
+            std::cout << "You have been locked out for being silly\n";
+            return;
+        default:
+            break;
+    }
+
     // switching terminal to non-canonical
     struct termios old_tio = {};
     tcgetattr(STDIN_FILENO, &old_tio);
     ConsoleController(false, false);
-
-    Dictionary dict;
-    Word word;
+    char keystroke = ' ';
 
     while (true) {
         PrintMenu();
         switch (ReadSelectionFromStdin()) {
             case Action::AddWord:
-                word = {.rus = "", .eng = ""};
                 word.eng = ReadWordFromStdin();
                 word.rus = ReadWordFromStdin();
                 AddWord(dict, word);
@@ -330,23 +418,27 @@ void Interactive() {
             case Action::RemoveWord:
                 break;
             case Action::TranslateEngToRus:
-                word = {.rus = "", .eng = ""};
                 word.eng = ReadWordFromStdin();
                 std::cout << GetTranslation(dict, word.eng, true);
                 break;
             case Action::TranslateRusToEng:
-                word = {.rus = "", .eng = ""};
                 word.rus = ReadWordFromStdin();
                 std::cout << GetTranslation(dict, word.eng, false);
                 break;
             case Action::PrintDict:
                 PrintDict(dict);
+                fread(&keystroke, 1, 1, stdin);
                 break;
             case Action::DictToFile:
                 WriteDictToFile(dict);
                 break;
             case Action::Exit:
                 std::cout << "Exiting.\n";
+                tcsetattr(STDIN_FILENO, TCSANOW, &old_tio);  // restore terminal settings
+                return;
+            default:
+                ClearTerminal();
+                WriteLockoutIntoFile();
                 tcsetattr(STDIN_FILENO, TCSANOW, &old_tio);  // restore terminal settings
                 return;
         }
