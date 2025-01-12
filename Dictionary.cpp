@@ -12,18 +12,16 @@
 /*
 
         COMMIT COMMENTS:
-        - did ShowPopUp via cycle
-        - made ShowTranslation base on ShowPopUp()
-        - added "english"/"russian" prompts to ReadWordFromStdin()
-        - GetTranslation() now returns nullptr on failure
-        - turned on RemoveWord()
+        - renamed ShowPopUp() to ShowSavedPopUp()
+        - Made scrollable ShowDict()
+        - complete the required tasks
+        - do a in-terminal windows and pop-ups
 
 
         TO-DO LIST:
-        - complete the required tasks (still need to make prettier PrintDict())
         - praise the satan
-        - do a in-terminal windows and pop-ups (i think only PrintDict() is left)
         - debloat (nah)
+        - appease the clang-tidy (oh boy...)
 
 */
 
@@ -105,7 +103,7 @@ void PrintMenu() {
     std::cout << std::setw(80) << "7. Exit" << '\n';
 }
 
-void ShowPopUp(const Action& action) {
+void ShowSavedPopUp(const Action& action) {
     if (action != Action::DictToFile) {
         std::cout << "Bruh\n";
         return;
@@ -131,26 +129,6 @@ void ShowPopUp(const Action& action) {
     char keystroke = ' ';
     fread(&keystroke, 1, 1, stdin);  // (Press any button to continue)
 }
-
-// void ShowPopUp(Action& action, Dictionary::Word& word) {
-//     switch (action) {
-//         case Action::AddWord:
-//             std::cout << "Adding word to dictionary\n";
-//             break;
-//         case Action::RemoveWord:
-//             std::cout << "Removing word from dictionary\n";
-//             break;
-//         case Action::TranslateEngToRus:
-//             std::cout << "Translating " << word.eng << " to Russian\n";
-//             break;
-//         case Action::TranslateRusToEng:
-//             std::cout << "Translating " << word.rus << " to English\n";
-//             break;
-//         default:
-//             std::cout << "Defaulted in ShowPopUp. Investigate\n";
-//             break;
-//     }
-// }
 
 void ShowTranslation(Dictionary::Word& word) {
     char WordNotFound[10] = "NOT FOUND";
@@ -191,6 +169,85 @@ void ShowTranslation(Dictionary::Word& word) {
     std::cout << "\033[u";  // restoring cursor position
 
     char keystroke = 'c';
+    while (keystroke != ' ')
+        fread(&keystroke, 1, 1, stdin);  // (Press SPACE to continue)
+}
+
+void ShowDictionaryFill(Dictionary::Dictionary& dict, const size_t firstWord = 0) {
+    std::cout << "\033[s";  // saving cursor position
+    for (size_t i = firstWord; i < firstWord + 5; ++i) {
+        if (i == dict.length) {
+            break;
+        }
+
+        int line = 3 + i - firstWord;
+        std::cout << "\033[" << line << ";12H";
+        std::cout << std::setw(18) << std::right << dict.dict[i].eng;
+        std::cout << " -- ";
+        std::cout << std::setw(18) << std::left << dict.dict[i].rus;
+        std::cout << "\033[" << line << ";55H";
+        std::cout << std::setw(3) << std::left << i + 1;
+    }
+    std::cout << "\033[u";  // restoring cursor position
+}
+
+void ShowDictionary(Dictionary::Dictionary& dict) {
+    const char* PrintDictBorder[7] = {
+        "╔═══════════════════════ Dictionary ═══════════════════════╗", "║                                          ║               ║",
+        "║                                          ║      Total    ║", "║                                          ║     entries:  ║",
+        "║                                          ║               ║", "║                                          ║               ║",
+        "╚═════════════════ (Press SPACE to close) ═════════════════╝"};
+
+    // printing border
+    std::cout << "\033[s";  // saving cursor position
+    std::cout << "\033[2;10H";
+    for (int i = 0; i < 7; ++i) {
+        if (i != 0) {
+            std::cout << "\033[1B";
+            std::cout << "\033[60D";
+        }
+        std::cout << PrintDictBorder[i];
+    }
+
+    std::cout << "\033[6;59H";
+    std::cout << std::setw(8) << std::right << dict.length;
+    std::cout << "\033[u";  // restoring cursor position
+
+    char keystroke = 'c';
+
+    if (dict.length == 0) {
+        std::cout << "\033[4;15H";
+        std::cout << "Dictionary is empty!";
+        std::cout << "\033[1B";
+        std::cout << "\033[20D";
+        std::cout << "Try adding some words first :)";
+        std::cout << "\033[u";  // restoring cursor position
+        while (keystroke != ' ')
+            fread(&keystroke, 1, 1, stdin);  // (Press SPACE to continue)
+        return;
+    }
+
+    ShowDictionaryFill(dict);
+
+    size_t firstWord = 0;
+    char buf[3] = "  ";
+    while (fread(&keystroke, 1, 1, stdin)) {
+        if (keystroke == ' ') {
+            break;
+        }
+
+        buf[0] = buf[1];
+        buf[1] = buf[2];
+        buf[2] = keystroke;
+
+        if (buf[0] == '\033' && buf[2] == 'B' && (firstWord + 1) + 5 <= dict.length) {
+            ShowDictionaryFill(dict, ++firstWord);
+        } else if (buf[0] == '\033' && buf[2] == 'A' && firstWord > 0) {
+            ShowDictionaryFill(dict, --firstWord);
+        }
+    }
+
+    std::cout << "\033[u";  // restoring cursor position
     while (keystroke != ' ')
         fread(&keystroke, 1, 1, stdin);  // (Press SPACE to continue)
 }
@@ -405,7 +462,7 @@ void WriteDictToFile(Dictionary& dict, const char* fileName = "dict.txt") {
     }
     dictOut.close();
 
-    ShowPopUp(Action::DictToFile);
+    ShowSavedPopUp(Action::DictToFile);
 }
 
 void test() {
@@ -450,7 +507,7 @@ void Interactive() {
     struct termios old_tio = {};
     tcgetattr(STDIN_FILENO, &old_tio);
     ConsoleController(false, false);
-    char keystroke = ' ';
+    // char keystroke = ' ';
 
     while (true) {
         PrintMenu();
@@ -476,8 +533,9 @@ void Interactive() {
                 ShowTranslation(word);
                 break;
             case Action::PrintDict:
-                PrintDict(dict);
-                fread(&keystroke, 1, 1, stdin);
+                // PrintDict(dict);
+                // fread(&keystroke, 1, 1, stdin);
+                ShowDictionary(dict);
                 break;
             case Action::DictToFile:
                 WriteDictToFile(dict);
