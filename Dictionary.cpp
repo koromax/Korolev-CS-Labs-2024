@@ -12,20 +12,34 @@
 /*
 
         COMMIT COMMENTS:
-        - renamed ShowPopUp() to ShowSavedPopUp()
-        - Made scrollable ShowDict()
-        - complete the required tasks
-        - do a in-terminal windows and pop-ups
-
-
-        TO-DO LIST:
-        - praise the satan
-        - debloat (nah)
-        - appease the clang-tidy (oh boy...)
+        - added WaitForKey() function
+        - edited RemoveWord() to search for word in both languages
+        - added ShowRemoveWordError()
+        - appeased the clang-tidy (with the same amount of lines of code somehow)
+        - praised the satan (required for the clang-tidy)
+        - debloat (kinda did)
 
 */
 
 namespace {
+const int kDecimalSystem = 10;
+const int kZeroASCIICode = 48;
+const int kTerminalWidth = 80;
+const int kDictSavedPopUpHeight = 6;
+const int kTranslationPopUpHeight = 7;
+const int kTranslationWordWidth = 34;
+const int kDictWordsPerPage = 5;
+const int kPrintDictPopUpHeight = 7;
+const int kPrintDictEntriesCountWidth = 8;
+const int kPrintDictWordWidth = 18;
+const int kPrintDictWordNumberWidth = 3;
+const int kPrintDictWordVerticalOffset = 3;
+
+const int kOneASCIICode = 49;
+const int kSevenASCIICode = 55;
+
+const int kBufferSize = 256;
+const int kTimeoutSeconds = 60;
 enum class Action : char {
     AddWord = '1',
     RemoveWord = '2',
@@ -42,8 +56,14 @@ void ClearTerminal() {
 }
 
 void ClearStdin() {
-    while (std::getchar() != '\n')
-        ;
+    while (std::getchar() != '\n') {}
+}
+
+void WaitForKey() {
+    char keystroke = 'c';
+    while (keystroke != ' ') {
+        fread(&keystroke, 1, 1, stdin);
+    }  // (Press SPACE to continue)
 }
 
 void ConsoleController(bool isCanon, bool isEchoOn) {
@@ -65,7 +85,7 @@ void ConsoleController(bool isCanon, bool isEchoOn) {
 
 void itoa(int n, int numberLength, char*& a) {
     for (int i = numberLength - 1; i >= 0; --i) {
-        a[i] = static_cast<char>(static_cast<int>(n / std::pow(10, i)) % 10 + 48);
+        a[i] = static_cast<char>(static_cast<int>(n / std::pow(kDecimalSystem, i)) % kDecimalSystem + kZeroASCIICode);
     }
 }
 
@@ -92,15 +112,33 @@ void AllocSpace(Dictionary::Dictionary& dict) {
 void PrintMenu() {
     ClearTerminal();
     std::cout << std::left;
-    std::cout << std::setw(80) << "Dictionary" << '\n';
-    std::cout << std::setw(80) << "Choose an action" << '\n' << '\n';
-    std::cout << std::setw(80) << "1. Add word to Dictionary" << '\n';
-    std::cout << std::setw(80) << "2. Remove word from the Dictionary" << '\n';
-    std::cout << std::setw(80) << "3. Translate word from English to Russian" << '\n';
-    std::cout << std::setw(80) << "4. Translate word from Russian to English" << '\n';
-    std::cout << std::setw(80) << "5. Print Dictionary" << '\n';
-    std::cout << std::setw(80) << "6. Save Dictionary to file" << '\n';
-    std::cout << std::setw(80) << "7. Exit" << '\n';
+    std::cout << std::setw(kTerminalWidth) << "Dictionary" << '\n';
+    std::cout << std::setw(kTerminalWidth) << "Choose an action" << '\n' << '\n';
+    std::cout << std::setw(kTerminalWidth) << "1. Add word to Dictionary" << '\n';
+    std::cout << std::setw(kTerminalWidth) << "2. Remove word from the Dictionary" << '\n';
+    std::cout << std::setw(kTerminalWidth) << "3. Translate word from English to Russian" << '\n';
+    std::cout << std::setw(kTerminalWidth) << "4. Translate word from Russian to English" << '\n';
+    std::cout << std::setw(kTerminalWidth) << "5. Print Dictionary" << '\n';
+    std::cout << std::setw(kTerminalWidth) << "6. Save Dictionary to file" << '\n';
+    std::cout << std::setw(kTerminalWidth) << "7. Exit" << '\n';
+    std::cout << "\033[s";
+}
+
+void ShowRemoveWordError() {
+    const char* SavedDictMessage[kDictSavedPopUpHeight] = {"╔══════════════════════════════════════╗", "║                                      ║",
+                                                           "║           Word not found.            ║", "║                                      ║",
+                                                           "║      (Press SPACE to continue)       ║", "╚══════════════════════════════════════╝"};
+
+    std::cout << "\033[s";  // saving cursor position
+    std::cout << "\033[3;21H";
+    for (auto& i : SavedDictMessage) {
+        std::cout << i;
+        std::cout << "\033[1B";
+        std::cout << "\033[40D";
+    }
+
+    std::cout << "\033[u";  // restoring cursor position
+    WaitForKey();
 }
 
 void ShowSavedPopUp(const Action& action) {
@@ -109,160 +147,82 @@ void ShowSavedPopUp(const Action& action) {
         return;
     }
 
-    const char* SavedDictMessage[6] = {"╔══════════════════════════════════════╗", "║                                      ║",
-                                       "║     Saved dictionary to a file.      ║", "║                                      ║",
-                                       "║    (Press any button to continue)    ║", "╚══════════════════════════════════════╝"};
+    const char* SavedDictMessage[kDictSavedPopUpHeight] = {"╔══════════════════════════════════════╗", "║                                      ║",
+                                                           "║     Saved dictionary to a file.      ║", "║                                      ║",
+                                                           "║      (Press SPACE to continue)       ║", "╚══════════════════════════════════════╝"};
 
     std::cout << "\033[s";  // saving cursor position
-    for (int i = 0; i < 6; ++i) {
-        if (i == 0) {
-            std::cout << "\033[7A";
-            std::cout << "\033[20C";
-        } else {
-            std::cout << "\033[1B";
-            std::cout << "\033[40D";
-        }
-        std::cout << SavedDictMessage[i];
+    std::cout << "\033[3;21H";
+    for (auto& i : SavedDictMessage) {
+        std::cout << i;
+        std::cout << "\033[1B";
+        std::cout << "\033[40D";
     }
 
     std::cout << "\033[u";  // restoring cursor position
-    char keystroke = ' ';
-    fread(&keystroke, 1, 1, stdin);  // (Press any button to continue)
+    WaitForKey();
 }
 
-void ShowTranslation(Dictionary::Word& word) {
-    char WordNotFound[10] = "NOT FOUND";
-    if (word.eng == nullptr) {
-        word.eng = WordNotFound;
-    } else if (word.rus == nullptr) {
-        word.rus = WordNotFound;
-    }
+[[nodiscard]] char* GetTranslation(Dictionary::Dictionary& dict, const char* text, const bool& ENGtoRU) {
+    size_t L = 0;
+    size_t R = dict.length;
 
-    const char* TranslationMessage[7] = {"╔══════════════════════════════════════╗", "║  English:                            ║",
-                                         "║                                      ║", "║  Russian:                            ║",
-                                         "║                                      ║", "║       (Press SPACE to continue)      ║",
-                                         "╚══════════════════════════════════════╝"};
-
-    std::cout << "\033[s";  // saving cursor position
-    for (int i = 0; i < 7; ++i) {
-        if (i == 0) {
-            std::cout << "\033[8A";
-            std::cout << "\033[20C";
-        } else {
-            std::cout << "\033[1B";
-            std::cout << "\033[40D";
+    if (ENGtoRU) {
+        size_t m = L + (R - L) / 2;
+        while (R - L > 1) {
+            if (std::strcmp(text, dict.dict[m].eng) >= 0) {
+                L = m;
+            } else {
+                R = m;
+            }
+            m = L + (R - L) / 2;
         }
-        std::cout << TranslationMessage[i];
+
+        if (std::strcmp(text, dict.dict[L].eng) != 0) {
+            return nullptr;
+        }
+
+        return dict.dict[L].rus;
+
+    } else {
+        for (size_t i = 0; i < dict.length; ++i) {
+            if (std::strcmp(text, dict.dict[i].rus) == 0) {
+                return dict.dict[i].eng;
+            }
+        }
+        return nullptr;
     }
-    std::cout << "\033[u";  // restoring cursor position
-
-    // writing word.eng
-    std::cout << "\033[6A";
-    std::cout << "\033[21C";
-    std::cout << "  " << std::setw(34) << std::right << word.eng;
-    std::cout << "\033[u";  // restoring cursor position
-
-    // writing word.rus
-    std::cout << "\033[4A";
-    std::cout << "\033[21C";
-    std::cout << "  " << std::setw(34) << std::right << word.rus;
-    std::cout << "\033[u";  // restoring cursor position
-
-    char keystroke = 'c';
-    while (keystroke != ' ')
-        fread(&keystroke, 1, 1, stdin);  // (Press SPACE to continue)
 }
 
 void ShowDictionaryFill(Dictionary::Dictionary& dict, const size_t firstWord = 0) {
     std::cout << "\033[s";  // saving cursor position
-    for (size_t i = firstWord; i < firstWord + 5; ++i) {
+    for (size_t i = firstWord; i < firstWord + kDictWordsPerPage; ++i) {
         if (i == dict.length) {
             break;
         }
 
-        int line = 3 + i - firstWord;
-        std::cout << "\033[" << line << ";12H";
-        std::cout << std::setw(18) << std::right << dict.dict[i].eng;
+        int line = static_cast<int>(kPrintDictWordVerticalOffset + i - firstWord);
+        std::cout << "\033[" << line << ";13H";
+        std::cout << std::setw(kPrintDictWordWidth) << std::right << dict.dict[dict.wordOrder[i]].eng;
         std::cout << " -- ";
-        std::cout << std::setw(18) << std::left << dict.dict[i].rus;
-        std::cout << "\033[" << line << ";55H";
-        std::cout << std::setw(3) << std::left << i + 1;
+        std::cout << std::setw(kPrintDictWordWidth) << std::left << dict.dict[dict.wordOrder[i]].rus;
+        std::cout << "\033[" << line << ";56H";
+        std::cout << std::setw(kPrintDictWordNumberWidth) << std::left << i + 1;
     }
     std::cout << "\033[u";  // restoring cursor position
-}
-
-void ShowDictionary(Dictionary::Dictionary& dict) {
-    const char* PrintDictBorder[7] = {
-        "╔═══════════════════════ Dictionary ═══════════════════════╗", "║                                          ║               ║",
-        "║                                          ║      Total    ║", "║                                          ║     entries:  ║",
-        "║                                          ║               ║", "║                                          ║               ║",
-        "╚═════════════════ (Press SPACE to close) ═════════════════╝"};
-
-    // printing border
-    std::cout << "\033[s";  // saving cursor position
-    std::cout << "\033[2;10H";
-    for (int i = 0; i < 7; ++i) {
-        if (i != 0) {
-            std::cout << "\033[1B";
-            std::cout << "\033[60D";
-        }
-        std::cout << PrintDictBorder[i];
-    }
-
-    std::cout << "\033[6;59H";
-    std::cout << std::setw(8) << std::right << dict.length;
-    std::cout << "\033[u";  // restoring cursor position
-
-    char keystroke = 'c';
-
-    if (dict.length == 0) {
-        std::cout << "\033[4;15H";
-        std::cout << "Dictionary is empty!";
-        std::cout << "\033[1B";
-        std::cout << "\033[20D";
-        std::cout << "Try adding some words first :)";
-        std::cout << "\033[u";  // restoring cursor position
-        while (keystroke != ' ')
-            fread(&keystroke, 1, 1, stdin);  // (Press SPACE to continue)
-        return;
-    }
-
-    ShowDictionaryFill(dict);
-
-    size_t firstWord = 0;
-    char buf[3] = "  ";
-    while (fread(&keystroke, 1, 1, stdin)) {
-        if (keystroke == ' ') {
-            break;
-        }
-
-        buf[0] = buf[1];
-        buf[1] = buf[2];
-        buf[2] = keystroke;
-
-        if (buf[0] == '\033' && buf[2] == 'B' && (firstWord + 1) + 5 <= dict.length) {
-            ShowDictionaryFill(dict, ++firstWord);
-        } else if (buf[0] == '\033' && buf[2] == 'A' && firstWord > 0) {
-            ShowDictionaryFill(dict, --firstWord);
-        }
-    }
-
-    std::cout << "\033[u";  // restoring cursor position
-    while (keystroke != ' ')
-        fread(&keystroke, 1, 1, stdin);  // (Press SPACE to continue)
 }
 
 [[nodiscard]] Action ReadSelectionFromStdin() {
     char keystroke = ' ';
     fread(&keystroke, 1, 1, stdin);
     size_t strikes = 0;
-    while (keystroke < 49 || keystroke > 55) {
+    while (keystroke < kOneASCIICode || keystroke > kSevenASCIICode) {
         ++strikes;
         if (strikes == 1) {
             std::cout << "Press a button with a number in range 1 - 7\n";
-        } else if (strikes == 4) {
+        } else if (strikes == 3) {
             std::cout << "Okay, you are being silly now. I also can do silly stuff. Try pressing another button\n";
-        } else if (strikes == 5) {
+        } else if (strikes == 4) {
             return Action::None;
         }
         fread(&keystroke, 1, 1, stdin);
@@ -272,7 +232,7 @@ void ShowDictionary(Dictionary::Dictionary& dict) {
 
 [[nodiscard]] char* ReadWordFromStdin(const bool& IsEng) {
     ConsoleController(true, true);
-    char buffer[256];
+    char buffer[kBufferSize];
     if (IsEng) {
         std::cout << "Enter english word: ";
     } else {
@@ -280,8 +240,10 @@ void ShowDictionary(Dictionary::Dictionary& dict) {
     }
     std::cin >> buffer;
 
-    char* word = new char[std::strlen(buffer) + 1];
-    std::strcpy(word, buffer);
+    size_t length = std::strlen(buffer);
+    char* word = new char[length + 1];
+    std::strncpy(word, buffer, length);
+    word[length] = '\0';
 
     ClearStdin();
     ConsoleController(false, false);
@@ -296,43 +258,51 @@ void WriteLockoutIntoFile(const char* fileName = "dict.txt") {
     }
     dictOut.write("-1\n", 3);
     auto currentTime = std::chrono::system_clock::to_time_t(std::chrono::system_clock::now());
-    dictOut.write(reinterpret_cast<const char*>(&currentTime), sizeof(currentTime));
+    char timeBuffer[sizeof(currentTime)];
+    std::memcpy(timeBuffer, &currentTime, sizeof(currentTime));
+    dictOut.write(timeBuffer, sizeof(timeBuffer));
     dictOut.close();
 
     std::cout << "Program was preemptively closed at " << std::ctime(&currentTime) << '\n';
 }
 
-int LoadDictFromFile(Dictionary::Dictionary& dict, const char* fileName = "dict.txt") {
+[[nodiscard]] int LoadDictFromFile(Dictionary::Dictionary& dict, const char* fileName = "dict.txt") {
     std::ifstream dictIn(fileName);
     if (!dictIn.is_open()) {
         std::cout << "Failed to open file " << fileName << "\n";
         return 1;
     }
 
-    char buffer[256];
+    char buffer[kBufferSize];
     if (dictIn.getline(buffer, sizeof(buffer))) {
         int length = std::atoi(buffer);
 
         // check if lockout is in place
         if (length == -1) {
             auto currentTime = std::chrono::system_clock::to_time_t(std::chrono::system_clock::now());
-            std::time_t recordedTime;
-            dictIn.read(reinterpret_cast<char*>(&recordedTime), sizeof(recordedTime));
+            std::time_t recordedTime = 0;
+            char timeBuffer[sizeof(recordedTime)];
+            dictIn.read(timeBuffer, sizeof(timeBuffer));
+            std::memcpy(&recordedTime, timeBuffer, sizeof(recordedTime));
 
-            if (currentTime - recordedTime < 60) {
+            if (currentTime - recordedTime < kTimeoutSeconds) {
                 return 2;
             }
         }
 
         for (int i = 0; i < length; ++i) {
-            Dictionary::Word word;
+            Dictionary::Word word{};
             if (dictIn.getline(buffer, sizeof(buffer))) {
-                word.eng = new char[std::strlen(buffer) + 1];
-                std::strcpy(word.eng, buffer);
+                size_t length = std::strlen(buffer);
+                word.eng = new char[length + 1];
+                std::strncpy(word.eng, buffer, length);
+                word.eng[length] = '\0';
             }
             if (dictIn.getline(buffer, sizeof(buffer))) {
-                word.rus = new char[std::strlen(buffer) + 1];
-                std::strcpy(word.rus, buffer);
+                size_t length = std::strlen(buffer);
+                word.rus = new char[length + 1];
+                std::strncpy(word.rus, buffer, length);
+                word.rus[length] = '\0';
             }
             AddWord(dict, word);
         }
@@ -341,7 +311,6 @@ int LoadDictFromFile(Dictionary::Dictionary& dict, const char* fileName = "dict.
     dictIn.close();
     return 0;
 }
-
 }  // namespace
 
 namespace Dictionary {
@@ -365,16 +334,18 @@ void AddWord(Dictionary& dict, const Word& word) {
     ++dict.length;
 }
 
-void RemoveWord(Dictionary& dict, const Word& word) {
+void RemoveWord(Dictionary& dict, const char* word) {
     size_t i = 0;
-    while (i < dict.length && std::strcmp(word.eng, dict.dict[i].eng) != 0) {
+    while (i < dict.length && std::strcmp(word, dict.dict[i].eng) && std::strcmp(word, dict.dict[i].rus) != 0) {
         ++i;
     }
 
     if (i == dict.length) {
-        std::cout << "Word not found\n";
+        ShowRemoveWordError();
         return;
     }
+
+    Word wordToRemove = dict.dict[i];
 
     delete[] dict.dict[i].eng;
     delete[] dict.dict[i].rus;
@@ -385,7 +356,7 @@ void RemoveWord(Dictionary& dict, const Word& word) {
     }
 
     size_t k = 0;
-    while (k < dict.length && std::strcmp(word.eng, dict.dict[dict.wordOrder[k]].eng) != 0) {
+    while (k < dict.length && std::strcmp(wordToRemove.eng, dict.dict[dict.wordOrder[k]].eng) != 0) {
         ++k;
     }
 
@@ -394,45 +365,92 @@ void RemoveWord(Dictionary& dict, const Word& word) {
     }
 }
 
-char* GetTranslation(Dictionary& dict, const char* text, const bool& ENGtoRU) {
-    size_t L = 0;
-    size_t R = dict.length;
-
-    if (ENGtoRU) {
-        size_t m = L + (R - L) / 2;
-        while (R - L > 1) {
-            if (std::strcmp(text, dict.dict[m].eng) >= 0) {
-                L = m;
-            } else {
-                R = m;
-            }
-            m = L + (R - L) / 2;
-        }
-
-        if (std::strcmp(text, dict.dict[L].eng) != 0) {
-            // std::cout << "no such word to be found: " << text << '\n';
-            return nullptr;
-        }
-
-        return dict.dict[L].rus;
-
-    } else {
-        for (size_t i = 0; i < dict.length; ++i) {
-            if (std::strcmp(text, dict.dict[i].rus) == 0) {
-                return dict.dict[i].eng;
-            }
-        }
-        // std::cout << "no such word to be found: " << text << '\n';
-        return nullptr;
+void ShowTranslation(Word& word) {
+    char WordNotFound[] = "NOT FOUND";
+    if (word.eng == nullptr) {
+        word.eng = WordNotFound;
+    } else if (word.rus == nullptr) {
+        word.rus = WordNotFound;
     }
+
+    const char* TranslationMessage[kTranslationPopUpHeight] = {"╔══════════════════════════════════════╗", "║  English:                            ║",
+                                                               "║                                      ║", "║  Russian:                            ║",
+                                                               "║                                      ║", "║       (Press SPACE to continue)      ║",
+                                                               "╚══════════════════════════════════════╝"};
+
+    std::cout << "\033[s";  // saving cursor position
+    std::cout << "\033[3;19H";
+    for (auto& i : TranslationMessage) {
+        std::cout << i;
+        std::cout << "\033[1B";
+        std::cout << "\033[40D";
+    }
+
+    // writing word.eng
+    std::cout << "\033[5;20H";
+    std::cout << "  " << std::setw(kTranslationWordWidth) << std::right << word.eng;
+
+    // writing word.rus
+    std::cout << "\033[7;20H";
+    std::cout << "  " << std::setw(kTranslationWordWidth) << std::right << word.rus;
+
+    std::cout << "\033[u";  // restoring cursor position
+    WaitForKey();
 }
 
-void PrintDict(Dictionary& dict) {
-    std::cout << "eng -- rus : " << dict.length << " entries\n";
-    for (size_t i = 0; i < dict.length; ++i) {
-        std::cout << dict.dict[dict.wordOrder[i]].eng << ' ' << dict.dict[dict.wordOrder[i]].rus << '\n';
-        // std::cout << dict.dict[i].rus << ' ' << dict.dict[i].eng << '\n';
+void ShowDictionary(Dictionary& dict) {
+    const char* PrintDictBorder[kPrintDictPopUpHeight] = {
+        "╔═══════════════════════ Dictionary ═══════════════════════╗", "║                                          ║               ║",
+        "║                                          ║      Total    ║", "║                                          ║     entries:  ║",
+        "║                                          ║               ║", "║                                          ║               ║",
+        "╚═════════════════ (Press SPACE to close) ═════════════════╝"};
+
+    // printing border
+    std::cout << "\033[s";  // saving cursor position
+    std::cout << "\033[2;11H";
+    for (auto& i : PrintDictBorder) {
+        std::cout << i;
+        std::cout << "\033[1B";
+        std::cout << "\033[60D";
     }
+
+    std::cout << "\033[6;60H";
+    std::cout << std::setw(kPrintDictEntriesCountWidth) << std::right << dict.length;
+    std::cout << "\033[u";  // restoring cursor position
+
+    if (dict.length == 0) {
+        std::cout << "\033[4;16H";
+        std::cout << "Dictionary is empty!";
+        std::cout << "\033[1B";
+        std::cout << "\033[20D";
+        std::cout << "Try adding some words first :)";
+        std::cout << "\033[u";  // restoring cursor position
+        WaitForKey();
+        return;
+    }
+
+    ShowDictionaryFill(dict);
+
+    size_t firstWord = 0;
+    char keystroke = 'c';
+    char buf[3] = "  ";
+    while (fread(&keystroke, 1, 1, stdin)) {
+        if (keystroke == ' ') {
+            break;
+        }
+
+        buf[0] = buf[1];
+        buf[1] = buf[2];
+        buf[2] = keystroke;
+
+        if (buf[0] == '\033' && buf[2] == 'B' && firstWord + kDictWordsPerPage < dict.length) {
+            ShowDictionaryFill(dict, ++firstWord);
+        } else if (buf[0] == '\033' && buf[2] == 'A' && firstWord > 0) {
+            ShowDictionaryFill(dict, --firstWord);
+        }
+    }
+
+    std::cout << "\033[u";  // restoring cursor position
 }
 
 void WriteDictToFile(Dictionary& dict, const char* fileName = "dict.txt") {
@@ -450,14 +468,13 @@ void WriteDictToFile(Dictionary& dict, const char* fileName = "dict.txt") {
 
     int numberLength = static_cast<int>(std::ceil(std::log10(dict.length)));
     char* writableLength = new char[numberLength];
-    itoa(dict.length, numberLength, writableLength);
-    std::cout << writableLength << '\n';
+    itoa(static_cast<int>(dict.length), numberLength, writableLength);
     dictOut.write(writableLength, numberLength);
     dictOut.write("\n", 1);
     for (size_t i = 0; i < dict.length; ++i) {
-        dictOut.write(dict.dict[dict.wordOrder[i]].eng, std::strlen(dict.dict[dict.wordOrder[i]].eng));
+        dictOut.write(dict.dict[dict.wordOrder[i]].eng, static_cast<long>(std::strlen(dict.dict[dict.wordOrder[i]].eng)));
         dictOut.write("\n", 1);
-        dictOut.write(dict.dict[dict.wordOrder[i]].rus, std::strlen(dict.dict[dict.wordOrder[i]].rus));
+        dictOut.write(dict.dict[dict.wordOrder[i]].rus, static_cast<long>(std::strlen(dict.dict[dict.wordOrder[i]].rus)));
         dictOut.write("\n", 1);
     }
     dictOut.close();
@@ -465,32 +482,9 @@ void WriteDictToFile(Dictionary& dict, const char* fileName = "dict.txt") {
     ShowSavedPopUp(Action::DictToFile);
 }
 
-void test() {
-    Dictionary dict;
-
-    Word word1;
-    word1.eng = ReadWordFromStdin(true);
-    word1.rus = ReadWordFromStdin(false);
-    AddWord(dict, word1);
-
-    // AddWord(dict, {.rus = "dead inside", .eng = "me at 2AM"});
-    // AddWord(dict, {.rus = "sobaka", .eng = "dog"});
-    // AddWord(dict, {.rus = "koshka", .eng = "cat"});
-    // AddWord(dict, {.rus = "penguin", .eng = "penguin"});
-    // AddWord(dict, {.rus = "ryba", .eng = "fish"});
-    // AddWord(dict, {.rus = "crack'o'deal", .eng = "croc"});
-    // RemoveWord(dict, {.rus = "dead inside", .eng = "me at 2AM"});
-    PrintDict(dict);
-
-    // std::cout << GetTranslation(dict, "penguin", false);
-    // std::cout << GetTranslation(dict, "penguin", true);
-
-    // WriteDictToFile(dict);
-}
-
 void Interactive() {
-    Dictionary dict;
-    Word word;
+    Dictionary dict{};
+    Word word{};
 
     switch (LoadDictFromFile(dict)) {
         case 1:
@@ -507,7 +501,6 @@ void Interactive() {
     struct termios old_tio = {};
     tcgetattr(STDIN_FILENO, &old_tio);
     ConsoleController(false, false);
-    // char keystroke = ' ';
 
     while (true) {
         PrintMenu();
@@ -519,8 +512,7 @@ void Interactive() {
                 break;
             case Action::RemoveWord:
                 word.eng = ReadWordFromStdin(true);
-                word.rus = ReadWordFromStdin(false);
-                RemoveWord(dict, word);
+                RemoveWord(dict, word.eng);
                 break;
             case Action::TranslateEngToRus:
                 word.eng = ReadWordFromStdin(true);
@@ -533,8 +525,6 @@ void Interactive() {
                 ShowTranslation(word);
                 break;
             case Action::PrintDict:
-                // PrintDict(dict);
-                // fread(&keystroke, 1, 1, stdin);
                 ShowDictionary(dict);
                 break;
             case Action::DictToFile:

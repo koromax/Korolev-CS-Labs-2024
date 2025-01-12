@@ -16,9 +16,9 @@ struct Dictionary {
 };
 
 void AddWord(Dictionary& dict, const Word& word);
-void RemoveWord(Dictionary& dict, const Word& word);
-char* GetTranslation(Dictionary& dict, const char* text, const bool& ENGtoRU);
-void PrintDict(Dictionary& dict);
+void RemoveWord(Dictionary& dict, const char* word);
+void ShowDictionary(Dictionary& dict);
+void ShowDictionary(Dictionary& dict);
 void WriteDictToFile(Dictionary& dict, const char* fileName);
 
 void test();
