@@ -2,13 +2,6 @@
 
 #include <stddef.h>
 
-namespace {
-enum class lang : bool {
-    eng = true,
-    rus = false
-};
-}  // namespace
-
 namespace Dictionary {
 struct Word {
     char* rus;
@@ -24,7 +17,7 @@ struct Dictionary {
 
 void AddWord(Dictionary& dict, const Word& word);
 void RemoveWord(Dictionary& dict, const Word& word);
-const char* GetTranslation(Dictionary& dict, const char* text, const bool& ENGtoRU);
+char* GetTranslation(Dictionary& dict, const char* text, const bool& ENGtoRU);
 void PrintDict(Dictionary& dict);
 void WriteDictToFile(Dictionary& dict, const char* fileName);
 

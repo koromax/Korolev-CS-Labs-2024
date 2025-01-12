@@ -12,16 +12,17 @@
 /*
 
         COMMIT COMMENTS:
-        - removed redundant stuff
-        - removed CompareWords()
-        - added loading from file
-        - added a lockout for being silly
+        - did ShowPopUp via cycle
+        - made ShowTranslation base on ShowPopUp()
+        - added "english"/"russian" prompts to ReadWordFromStdin()
+        - GetTranslation() now returns nullptr on failure
+        - turned on RemoveWord()
 
 
         TO-DO LIST:
-        - complete the required tasks (get removing word and getting translation working)
+        - complete the required tasks (still need to make prettier PrintDict())
         - praise the satan
-        - do a in-terminal windows and pop-ups???
+        - do a in-terminal windows and pop-ups (i think only PrintDict() is left)
         - debloat (nah)
 
 */
@@ -109,29 +110,26 @@ void ShowPopUp(const Action& action) {
         std::cout << "Bruh\n";
         return;
     }
-    char keystroke = ' ';
+
+    const char* SavedDictMessage[6] = {"╔══════════════════════════════════════╗", "║                                      ║",
+                                       "║     Saved dictionary to a file.      ║", "║                                      ║",
+                                       "║    (Press any button to continue)    ║", "╚══════════════════════════════════════╝"};
 
     std::cout << "\033[s";  // saving cursor position
-    std::cout << "\033[7A";
-    std::cout << "\033[20C";
-    std::cout << "╔══════════════════════════════════════╗";
-    std::cout << "\033[1B";
-    std::cout << "\033[40D";
-    std::cout << "║                                      ║";
-    std::cout << "\033[1B";
-    std::cout << "\033[40D";
-    std::cout << "║     Saved dictionary to a file.      ║";
-    std::cout << "\033[1B";
-    std::cout << "\033[40D";
-    std::cout << "║                                      ║";
-    std::cout << "\033[1B";
-    std::cout << "\033[40D";
-    std::cout << "║          (Press any button)          ║";
-    std::cout << "\033[1B";
-    std::cout << "\033[40D";
-    std::cout << "╚══════════════════════════════════════╝";
+    for (int i = 0; i < 6; ++i) {
+        if (i == 0) {
+            std::cout << "\033[7A";
+            std::cout << "\033[20C";
+        } else {
+            std::cout << "\033[1B";
+            std::cout << "\033[40D";
+        }
+        std::cout << SavedDictMessage[i];
+    }
+
     std::cout << "\033[u";  // restoring cursor position
-    fread(&keystroke, 1, 1, stdin);
+    char keystroke = ' ';
+    fread(&keystroke, 1, 1, stdin);  // (Press any button to continue)
 }
 
 // void ShowPopUp(Action& action, Dictionary::Word& word) {
@@ -154,6 +152,49 @@ void ShowPopUp(const Action& action) {
 //     }
 // }
 
+void ShowTranslation(Dictionary::Word& word) {
+    char WordNotFound[10] = "NOT FOUND";
+    if (word.eng == nullptr) {
+        word.eng = WordNotFound;
+    } else if (word.rus == nullptr) {
+        word.rus = WordNotFound;
+    }
+
+    const char* TranslationMessage[7] = {"╔══════════════════════════════════════╗", "║  English:                            ║",
+                                         "║                                      ║", "║  Russian:                            ║",
+                                         "║                                      ║", "║       (Press SPACE to continue)      ║",
+                                         "╚══════════════════════════════════════╝"};
+
+    std::cout << "\033[s";  // saving cursor position
+    for (int i = 0; i < 7; ++i) {
+        if (i == 0) {
+            std::cout << "\033[8A";
+            std::cout << "\033[20C";
+        } else {
+            std::cout << "\033[1B";
+            std::cout << "\033[40D";
+        }
+        std::cout << TranslationMessage[i];
+    }
+    std::cout << "\033[u";  // restoring cursor position
+
+    // writing word.eng
+    std::cout << "\033[6A";
+    std::cout << "\033[21C";
+    std::cout << "  " << std::setw(34) << std::right << word.eng;
+    std::cout << "\033[u";  // restoring cursor position
+
+    // writing word.rus
+    std::cout << "\033[4A";
+    std::cout << "\033[21C";
+    std::cout << "  " << std::setw(34) << std::right << word.rus;
+    std::cout << "\033[u";  // restoring cursor position
+
+    char keystroke = 'c';
+    while (keystroke != ' ')
+        fread(&keystroke, 1, 1, stdin);  // (Press SPACE to continue)
+}
+
 [[nodiscard]] Action ReadSelectionFromStdin() {
     char keystroke = ' ';
     fread(&keystroke, 1, 1, stdin);
@@ -172,10 +213,14 @@ void ShowPopUp(const Action& action) {
     return static_cast<Action>(keystroke);
 }
 
-[[nodiscard]] char* ReadWordFromStdin() {
+[[nodiscard]] char* ReadWordFromStdin(const bool& IsEng) {
     ConsoleController(true, true);
     char buffer[256];
-    std::cout << "Enter word: ";
+    if (IsEng) {
+        std::cout << "Enter english word: ";
+    } else {
+        std::cout << "Enter russian word: ";
+    }
     std::cin >> buffer;
 
     char* word = new char[std::strlen(buffer) + 1];
@@ -292,7 +337,7 @@ void RemoveWord(Dictionary& dict, const Word& word) {
     }
 }
 
-const char* GetTranslation(Dictionary& dict, const char* text, const bool& ENGtoRU) {
+char* GetTranslation(Dictionary& dict, const char* text, const bool& ENGtoRU) {
     size_t L = 0;
     size_t R = dict.length;
 
@@ -308,8 +353,8 @@ const char* GetTranslation(Dictionary& dict, const char* text, const bool& ENGto
         }
 
         if (std::strcmp(text, dict.dict[L].eng) != 0) {
-            std::cout << "no such word to be found: " << text << '\n';
-            return "";
+            // std::cout << "no such word to be found: " << text << '\n';
+            return nullptr;
         }
 
         return dict.dict[L].rus;
@@ -320,8 +365,8 @@ const char* GetTranslation(Dictionary& dict, const char* text, const bool& ENGto
                 return dict.dict[i].eng;
             }
         }
-        std::cout << "no such word to be found: " << text << '\n';
-        return "";
+        // std::cout << "no such word to be found: " << text << '\n';
+        return nullptr;
     }
 }
 
@@ -367,8 +412,8 @@ void test() {
     Dictionary dict;
 
     Word word1;
-    word1.eng = ReadWordFromStdin();
-    word1.rus = ReadWordFromStdin();
+    word1.eng = ReadWordFromStdin(true);
+    word1.rus = ReadWordFromStdin(false);
     AddWord(dict, word1);
 
     // AddWord(dict, {.rus = "dead inside", .eng = "me at 2AM"});
@@ -411,19 +456,24 @@ void Interactive() {
         PrintMenu();
         switch (ReadSelectionFromStdin()) {
             case Action::AddWord:
-                word.eng = ReadWordFromStdin();
-                word.rus = ReadWordFromStdin();
+                word.eng = ReadWordFromStdin(true);
+                word.rus = ReadWordFromStdin(false);
                 AddWord(dict, word);
                 break;
             case Action::RemoveWord:
+                word.eng = ReadWordFromStdin(true);
+                word.rus = ReadWordFromStdin(false);
+                RemoveWord(dict, word);
                 break;
             case Action::TranslateEngToRus:
-                word.eng = ReadWordFromStdin();
-                std::cout << GetTranslation(dict, word.eng, true);
+                word.eng = ReadWordFromStdin(true);
+                word.rus = GetTranslation(dict, word.eng, true);
+                ShowTranslation(word);
                 break;
             case Action::TranslateRusToEng:
-                word.rus = ReadWordFromStdin();
-                std::cout << GetTranslation(dict, word.eng, false);
+                word.rus = ReadWordFromStdin(false);
+                word.eng = GetTranslation(dict, word.rus, false);
+                ShowTranslation(word);
                 break;
             case Action::PrintDict:
                 PrintDict(dict);
