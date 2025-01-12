@@ -3,6 +3,7 @@
 #include <termios.h>
 #include <unistd.h>
 #include <chrono>
+#include <cmath>
 #include <cstring>
 #include <ctime>
 #include <fstream>
@@ -18,6 +19,7 @@
         - appeased the clang-tidy (with the same amount of lines of code somehow)
         - praised the satan (required for the clang-tidy)
         - debloat (kinda did)
+        - added <cmath>
 
 */
 
