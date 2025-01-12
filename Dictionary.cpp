@@ -533,6 +533,8 @@ void Interactive() {
                 WriteDictToFile(dict);
                 break;
             case Action::Exit:
+                dict.~Dictionary();
+                word.~Word();
                 std::cout << "Exiting.\n";
                 tcsetattr(STDIN_FILENO, TCSANOW, &old_tio);  // restore terminal settings
                 return;
@@ -543,8 +545,6 @@ void Interactive() {
                 return;
         }
     }
-
-    tcsetattr(STDIN_FILENO, TCSANOW, &old_tio);  // restore terminal settings
 }
 
 }  // namespace Dictionary
