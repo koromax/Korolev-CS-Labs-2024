@@ -12,14 +12,10 @@
 
 /*
 
+        GRADED ON 2025-01-13
+
         COMMIT COMMENTS:
-        - added WaitForKey() function
-        - edited RemoveWord() to search for word in both languages
-        - added ShowRemoveWordError()
-        - appeased the clang-tidy (with the same amount of lines of code somehow)
-        - praised the satan (required for the clang-tidy)
-        - debloat (kinda did)
-        - added <cmath>
+        - added DeleteDict()
 
 */
 
@@ -87,7 +83,7 @@ void ConsoleController(bool isCanon, bool isEchoOn) {
 
 void itoa(int n, int numberLength, char*& a) {
     for (int i = numberLength - 1; i >= 0; --i) {
-        a[i] = static_cast<char>(static_cast<int>(n / std::pow(kDecimalSystem, i)) % kDecimalSystem + kZeroASCIICode);
+        a[-i + 1] = static_cast<char>(static_cast<int>(n / std::pow(kDecimalSystem, i)) % kDecimalSystem + kZeroASCIICode);
     }
 }
 
@@ -313,6 +309,17 @@ void WriteLockoutIntoFile(const char* fileName = "dict.txt") {
     dictIn.close();
     return 0;
 }
+
+[[maybe_unused]] void DeleteDict(Dictionary::Dictionary& dict) {
+    for (size_t i = 0; i < dict.length; ++i) {
+        delete[] dict.dict[i].eng;
+        delete[] dict.dict[i].rus;
+    }
+    dict.length = 0;
+    delete[] dict.dict;
+    delete[] dict.wordOrder;
+}
+
 }  // namespace
 
 namespace Dictionary {
@@ -533,9 +540,7 @@ void Interactive() {
                 WriteDictToFile(dict);
                 break;
             case Action::Exit:
-                dict.~Dictionary();
-                word.~Word();
-                std::cout << "Exiting.\n";
+                DeleteDict(dict);
                 tcsetattr(STDIN_FILENO, TCSANOW, &old_tio);  // restore terminal settings
                 return;
             default:

@@ -17,7 +17,7 @@ struct Dictionary {
 
 void AddWord(Dictionary& dict, const Word& word);
 void RemoveWord(Dictionary& dict, const char* word);
-void ShowDictionary(Dictionary& dict);
+void ShowTranslation(Word& word);
 void ShowDictionary(Dictionary& dict);
 void WriteDictToFile(Dictionary& dict, const char* fileName);
 
