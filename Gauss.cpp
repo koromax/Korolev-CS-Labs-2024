@@ -14,10 +14,20 @@ void RemoveFakeMinuses(Matrix::Matrix<double>& m, double eps = 1e-10) {
         }
     }
 }
+
+void InitExampleMatrice(Matrix::Matrix<double>& A) {
+    A.SetSize(3, 3);
+    double setmatrice[9] = {2, 5, 7, 3, 9, 15, 5, 16, 20};
+    for (int i = 0; i < A.rows; ++i) {
+        for (int j = 0; j < A.columns; ++j) {
+            A.SetElement(i, j, setmatrice[i * 3 + j]);
+        }
+    }
+}
 }  // namespace
 
 namespace Gauss {
-void GaussianElimination(Matrix::Matrix<double>& A, Matrix::Matrix<double>& B) {
+void GaussianElimination(Matrix::Matrix<double>& A, Matrix::Matrix<double>& B, const bool showSteps = false) {
     // lower triangle
     for (int main_row = 0; main_row < A.rows; ++main_row) {
         // dividing row by first element
@@ -38,6 +48,11 @@ void GaussianElimination(Matrix::Matrix<double>& A, Matrix::Matrix<double>& B) {
         }
     }
 
+    if (showSteps) {
+        MatrixPrint::PrintMatrix(A, 6);
+        MatrixPrint::PrintMatrix(B, 6);
+    }
+
     // upper triangle
     for (int main_row = A.rows - 1; main_row > 0; --main_row) {
         for (int row = main_row - 1; row >= 0; --row) {
@@ -49,29 +64,46 @@ void GaussianElimination(Matrix::Matrix<double>& A, Matrix::Matrix<double>& B) {
             }
         }
     }
+
+    if (showSteps) {
+        MatrixPrint::PrintMatrix(A, 3);
+        MatrixPrint::PrintMatrix(B, 3);
+    }
 }
 
 void StartMainProgramm() {
-    int n = 3;
-    int m = 3;
+    std::cout << "Run algorithm with matrice from doc (Y) or user input (N)? : ";
+    char c = 'N';
+    std::cin >> c;
 
-    Matrix::Matrix<double> A(n, m);
-    Matrix::Matrix<double> B(n, m);
-    B.SetToOne();
+    Matrix::Matrix<double> A;
+    if (c == 'N' || c == 'n') {
+        int n = 0;
+        std::cout << "Enter matrix dimension: ";
+        std::cin >> n;
+        A.SetSize(n, n);
 
-    double setmatrice[9] = {2, 5, 7, 3, 9, 15, 5, 16, 20};
-    for (int i = 0; i < A.rows; ++i) {
-        for (int j = 0; j < A.columns; ++j) {
-            A.SetElement(i, j, setmatrice[i * 3 + j]);
+        std::cout << "Enter " << n * n << " values to set matrice (left-to-right, top-to-bottom): ";
+        double val = 0.;
+        for (int i = 0; i < n; ++i) {
+            for (int j = 0; j < n; ++j) {
+                std::cin >> val;
+                A.SetElement(i, j, val);
+            }
         }
+    } else {
+        InitExampleMatrice(A);
     }
 
+    Matrix::Matrix<double> B(A.rows, A.columns);
+    B.SetToOne();
+
     Matrix::Matrix<double> checkA = A;
-    GaussianElimination(A, B);
+    GaussianElimination(A, B, true);
     RemoveFakeMinuses(A);
     RemoveFakeMinuses(B);
     Matrix::Matrix<double> AB = checkA * B;
     RemoveFakeMinuses(AB);
-    MatrixPrint::PrintGaussianEliminatonWorkflow(checkA, B, AB, 3);
+    MatrixPrint::PrintGaussianEliminatonCheck(checkA, B, AB, 3);
 }
 }  // namespace Gauss

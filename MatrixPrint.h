@@ -10,5 +10,5 @@ template<typename VAL>
 void Printer(int firstColumn, Matrix::Matrix<VAL>& m, int precision, int width, bool);
 
 template<typename VAL>
-void PrintGaussianEliminatonWorkflow(Matrix::Matrix<VAL>&, Matrix::Matrix<VAL>&, Matrix::Matrix<VAL>&, int);
+void PrintGaussianEliminatonCheck(Matrix::Matrix<VAL>&, Matrix::Matrix<VAL>&, Matrix::Matrix<VAL>&, int);
 }  // namespace MatrixPrint

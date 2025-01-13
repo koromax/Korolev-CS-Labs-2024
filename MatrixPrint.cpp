@@ -126,7 +126,7 @@ void PrintMatrix(Matrix::Matrix<VAL>& m, int precision) {
 }
 
 template<typename VAL>
-void PrintGaussianEliminatonWorkflow(Matrix::Matrix<VAL>& m, Matrix::Matrix<VAL>& m_inverted, Matrix::Matrix<VAL>& check, int precision) {
+void PrintGaussianEliminatonCheck(Matrix::Matrix<VAL>& m, Matrix::Matrix<VAL>& m_inverted, Matrix::Matrix<VAL>& check, int precision) {
     struct termios old_tio = {};
     tcgetattr(STDIN_FILENO, &old_tio);
     struct termios new_tio = old_tio;
@@ -139,7 +139,9 @@ void PrintGaussianEliminatonWorkflow(Matrix::Matrix<VAL>& m, Matrix::Matrix<VAL>
 
     int firstColumn = 0;
     Printer(firstColumn, m, precision, width, true, false);
+    std::cout << std::setw(width * columnsPerLine / 2) << std::right << 'X' << '\n';
     Printer(firstColumn, m_inverted, precision, width, false, false);
+    std::cout << std::setw(width * columnsPerLine / 2) << std::right << "||" << '\n';
     Printer(firstColumn, check, precision, width, false, true);
 
     char buf[3] = "  ";
@@ -150,24 +152,32 @@ void PrintGaussianEliminatonWorkflow(Matrix::Matrix<VAL>& m, Matrix::Matrix<VAL>
         buf[2] = keystroke;
         if (buf[0] == '\033' && buf[2] == 'C' && firstColumn < m.columns - columnsPerLine) {
             Printer(++firstColumn, m, precision, width, true, false);
+            std::cout << std::setw(width * columnsPerLine / 2) << std::right << 'X' << '\n';
             Printer(firstColumn, m_inverted, precision, width, false, false);
+            std::cout << std::setw(width * columnsPerLine / 2) << std::right << "||" << '\n';
             Printer(firstColumn, check, precision, width, false, true);
         } else if (buf[0] == '\033' && buf[2] == 'D' && firstColumn != 0) {
             Printer(--firstColumn, m, precision, width, true, false);
+            std::cout << std::setw(width * columnsPerLine / 2) << std::right << 'X' << '\n';
             Printer(firstColumn, m_inverted, precision, width, false, false);
+            std::cout << std::setw(width * columnsPerLine / 2) << std::right << "||" << '\n';
             Printer(firstColumn, check, precision, width, false, true);
         } else if (buf[0] == '\033' && buf[2] == 'A' && precision < 8) {
             width = CalculateColumnWidth(m, ++precision);
             columnsPerLine = std::min(m.columns, (80 - 4) / width);
             Printer(firstColumn, m, precision, width, true, false);
+            std::cout << std::setw(width * columnsPerLine / 2) << std::right << 'X' << '\n';
             Printer(firstColumn, m_inverted, precision, width, false, false);
+            std::cout << std::setw(width * columnsPerLine / 2) << std::right << "||" << '\n';
             Printer(firstColumn, check, precision, width, false, true);
         } else if (buf[0] == '\033' && buf[2] == 'B' && precision > 3) {
             width = CalculateColumnWidth(m, --precision);
             columnsPerLine = std::min(m.columns, (80 - 4) / width);
             firstColumn = std::min(firstColumn, m.columns - columnsPerLine);
             Printer(firstColumn, m, precision, width, true, false);
+            std::cout << std::setw(width * columnsPerLine / 2) << std::right << 'X' << '\n';
             Printer(firstColumn, m_inverted, precision, width, false, false);
+            std::cout << std::setw(width * columnsPerLine / 2) << std::right << "||" << '\n';
             Printer(firstColumn, check, precision, width, false, true);
         } else if (buf[0] == '\033' && buf[1] == '\033' && buf[2] == '\033') {
             ClearTerminal();
@@ -181,6 +191,6 @@ void PrintGaussianEliminatonWorkflow(Matrix::Matrix<VAL>& m, Matrix::Matrix<VAL>
 
 // template void PrintMatrix<int>(Matrix::Matrix<int>&, int);
 template void PrintMatrix<double>(Matrix::Matrix<double>&, int);
-template void PrintGaussianEliminatonWorkflow<double>(Matrix::Matrix<double>&, Matrix::Matrix<double>&, Matrix::Matrix<double>&, int);
+template void PrintGaussianEliminatonCheck<double>(Matrix::Matrix<double>&, Matrix::Matrix<double>&, Matrix::Matrix<double>&, int);
 
 }  // namespace MatrixPrint
