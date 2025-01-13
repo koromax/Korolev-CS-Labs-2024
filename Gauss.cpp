@@ -49,8 +49,8 @@ void GaussianElimination(Matrix::Matrix<double>& A, Matrix::Matrix<double>& B, c
     }
 
     if (showSteps) {
-        MatrixPrint::PrintMatrix(A, 6);
-        MatrixPrint::PrintMatrix(B, 6);
+        MatrixPrint::PrintMatrix(A, 3);
+        MatrixPrint::PrintMatrix(B, 3);
     }
 
     // upper triangle

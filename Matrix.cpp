@@ -37,17 +37,6 @@ Matrix<VAL>::Matrix(Matrix& other) : rows(other.rows), columns(other.columns) {
     }
 }
 
-// template<typename VAL>
-// Matrix<VAL>::Matrix(Matrix&& other) : rows(other.rows), columns(other.columns) {
-//     matrix = new VAL*[rows];
-//     for (int i = 0; i < rows; ++i) {
-//         matrix[i] = new VAL[columns];
-//         for (int j = 0; j < columns; ++j) {
-//             matrix[i][j] = other.GetElement(i, j);
-//         }
-//     }
-// }
-
 template<typename VAL>
 Matrix<VAL>::~Matrix() {
     for (int i = 0; i < rows; ++i) {
