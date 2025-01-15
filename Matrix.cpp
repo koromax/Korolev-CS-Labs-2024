@@ -113,6 +113,20 @@ VAL Matrix<VAL>::GetElement(int i, int j) {
     return matrix[i][j];
 }
 
+template<typename VAL>
+void Matrix<VAL>::SwapRows(int i, int j) {
+    if (i == j || i < 0 || i >= rows || j < 0 || j >= rows) {
+        std::cout << "Out of bounds" << '\n';
+        return;
+    }
+
+    for (int column = 0; column < columns; ++column) {
+        VAL temp = matrix[i][column];
+        matrix[i][column] = matrix[j][column];
+        matrix[j][column] = temp;
+    }
+}
+
 // template struct Matrix<int>;
 template struct Matrix<double>;
 }  // namespace Matrix

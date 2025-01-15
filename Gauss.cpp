@@ -27,11 +27,24 @@ void InitExampleMatrice(Matrix::Matrix<double>& A) {
 }  // namespace
 
 namespace Gauss {
-void GaussianElimination(Matrix::Matrix<double>& A, Matrix::Matrix<double>& B, const bool showSteps = false) {
+bool GaussianElimination(Matrix::Matrix<double>& A, Matrix::Matrix<double>& B, const bool showSteps = false) {
     // lower triangle
     for (int main_row = 0; main_row < A.rows; ++main_row) {
         // dividing row by first element
         double k = A.GetElement(main_row, main_row);
+        if (k == 0) {
+            for (int row = main_row + 1; row < A.rows; ++row) {
+                k = A.GetElement(row, main_row);
+                if (k != 0) {
+                    A.SwapRows(main_row, row);
+                    B.SwapRows(main_row, row);
+                    break;
+                }
+            }
+            if (k == 0) {
+                return false;
+            }
+        }
         for (int column = 0; column < A.columns; ++column) {
             A.SetElement(main_row, column, A.GetElement(main_row, column) / k);
             B.SetElement(main_row, column, B.GetElement(main_row, column) / k);
@@ -69,6 +82,8 @@ void GaussianElimination(Matrix::Matrix<double>& A, Matrix::Matrix<double>& B, c
         MatrixPrint::PrintMatrix(A, 3);
         MatrixPrint::PrintMatrix(B, 3);
     }
+
+    return true;
 }
 
 void StartMainProgramm() {
@@ -99,7 +114,10 @@ void StartMainProgramm() {
     B.SetToOne();
 
     Matrix::Matrix<double> checkA = A;
-    GaussianElimination(A, B, true);
+    if (!GaussianElimination(A, B, true)) {
+        std::cout << "Matrix doesn't have an inverse" << '\n';
+        return;
+    }
     RemoveFakeMinuses(A);
     RemoveFakeMinuses(B);
     Matrix::Matrix<double> AB = checkA * B;

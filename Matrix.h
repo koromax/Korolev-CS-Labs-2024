@@ -10,7 +10,6 @@ struct Matrix {
     Matrix();
     Matrix(int n, int m);
     Matrix(Matrix&);
-    // Matrix(Matrix&&);
     ~Matrix();
 
     inline VAL& operator()(int x, int y) { return matrix[x][y]; };
@@ -22,6 +21,7 @@ struct Matrix {
     void SetToOne();
     void SetElement(int i, int j, VAL value);
     VAL GetElement(int i, int j);
+    void SwapRows(int i, int j);
 };
 
 template<typename VAL>
